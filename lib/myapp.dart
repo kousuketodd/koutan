@@ -26,8 +26,19 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
+class Inv {
+  String name;
+  int count;
+  Inv(this.name, this.count);
+
+  @override
+  String toString() {
+    return "$name: $count";
+  }
+}
+
 class _HomePageState extends State<HomePage> {
-  List<Widget> inventoryLog = [];
+  List<Inv> inventoryLog = [];
   void logItem(String name, int count) {
     setState(() {
       String type = "Received";
@@ -38,35 +49,28 @@ class _HomePageState extends State<HomePage> {
       }
       count = count.abs();
       String line = "$name: $count $type";
-      inventoryLog.add(SizedBox(
-        width: 200,
-        height: 75,
-        child: Card(
-          color: color,
-          child: Center(
-            child: Text(
-              line,
-              style: TextStyle(
-                fontSize: 24,
-                color: Colors.white,
-              ),
-              ),
-          ),
-        )
-      ));
+      inventoryLog.add(Inv(name, count));
     });
     print(inventoryLog);
   }
+
   @override
   Widget build(BuildContext context) {
+    print('rebuilding');
     return Scaffold(
       body: Column(
         children: [
           EditSelect(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [Tabs(callback: logItem,), Log(inventoryLog: inventoryLog,)]),
-        ],),
-      );
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Tabs(
+              callback: logItem,
+            ),
+            Log(
+              inventoryLog: inventoryLog,
+            )
+          ]),
+        ],
+      ),
+    );
   }
 }
