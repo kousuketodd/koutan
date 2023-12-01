@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 class AddSubPopup extends StatefulWidget {
   final String itemName;
@@ -125,15 +124,10 @@ class InputBox extends StatelessWidget {
   }
 }
 
-class ItemCounter extends StatefulWidget {
+class ItemCounter extends StatelessWidget {
   final int count;
 
   ItemCounter({Key? key, required this.count}) : super(key: key);
-  @override
-  State<ItemCounter> createState() => _ItemCounterState();
-}
-
-class _ItemCounterState extends State<ItemCounter> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -141,7 +135,7 @@ class _ItemCounterState extends State<ItemCounter> {
         height: 100,
         child: FittedBox(
           child: Text(
-            widget.count.toString(),
+            count.toString(),
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 70),
           ),
@@ -157,21 +151,13 @@ class ItemEnterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var logController = LogController();
     return FloatingActionButton.extended(
         onPressed: () {
           // closes the popup
           callback(name, count);
-          //logController.ping();
           Navigator.of(context).pop();
         },
         label: Text("Enter"),
         backgroundColor: Colors.blue);
-  }
-}
-
-class LogController extends ChangeNotifier {
-  void ping() {
-    notifyListeners();
   }
 }

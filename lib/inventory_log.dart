@@ -23,20 +23,12 @@ class Log extends StatelessWidget {
               child: ListView(
                 padding: EdgeInsets.all(10),
                 children: inventoryLog.map((e) {
-                  String type = "Received";
-                  Color color = Colors.green;
-                  var count = e.count;
-                  if (count < 0) {
-                    type = "Expended";
-                    color = Colors.red;
-                  }
-                  count = count.abs();
-                  String line = "${e.name}: $count $type";
+                  String line = "${e.name}: ${e.count} ${e.type}";
                   return (SizedBox(
                       width: 200,
                       height: 75,
                       child: Card(
-                        color: color,
+                        color: e.color,
                         child: Center(
                           child: Text(
                             line,

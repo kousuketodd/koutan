@@ -76,14 +76,9 @@ class _TabsState extends State<Tabs> with TickerProviderStateMixin {
   }
 }
 
-class InventoryTab extends StatefulWidget {
+class InventoryTab extends StatelessWidget {
   const InventoryTab({super.key});
 
-  @override
-  State<InventoryTab> createState() => _InventoryTabState();
-}
-
-class _InventoryTabState extends State<InventoryTab> {
   @override
   Widget build(BuildContext context) {
     return Tab(

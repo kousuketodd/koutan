@@ -29,7 +29,9 @@ class HomePage extends StatefulWidget {
 class Inv {
   String name;
   int count;
-  Inv(this.name, this.count);
+  String type;
+  Color color;
+  Inv(this.name, this.count, this.type, this.color);
 
   @override
   String toString() {
@@ -48,8 +50,7 @@ class _HomePageState extends State<HomePage> {
         color = Colors.red;
       }
       count = count.abs();
-      String line = "$name: $count $type";
-      inventoryLog.add(Inv(name, count));
+      inventoryLog.add(Inv(name, count, type, color));
     });
     print(inventoryLog);
   }
