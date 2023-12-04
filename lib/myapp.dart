@@ -42,6 +42,7 @@ class Inv {
 class _HomePageState extends State<HomePage> {
   List<Inv> inventoryLog = [];
   void logItem(String name, int count) {
+    if (count == 0) {return;}
     setState(() {
       String type = "Received";
       Color color = Colors.green;
@@ -53,6 +54,12 @@ class _HomePageState extends State<HomePage> {
       inventoryLog.add(Inv(name, count, type, color));
     });
     print(inventoryLog);
+  }
+
+  void deleteItem(int index) {
+    setState(() {
+      inventoryLog.removeAt(index);
+    });
   }
 
   @override
@@ -68,6 +75,7 @@ class _HomePageState extends State<HomePage> {
             ),
             Log(
               inventoryLog: inventoryLog,
+              callback: deleteItem,
             )
           ]),
         ],

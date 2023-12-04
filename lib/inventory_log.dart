@@ -1,46 +1,72 @@
 import 'package:flutter/material.dart';
-import 'package:koutan/add_sub_popup.dart';
+import 'package:koutan/inventory_storage.dart';
 import 'package:koutan/myapp.dart';
-import 'package:provider/provider.dart';
 
 class Log extends StatelessWidget {
-  Log({Key? key, required this.inventoryLog}) : super(key: key);
-  List<Inv> inventoryLog = [];
+  Log({Key? key, required this.inventoryLog, required this.callback}) : super(key: key);
+  final List<Inv> inventoryLog;
+  final Function callback;
 
   @override
   Widget build(BuildContext context) {
-    print("log rebuild");
-    //var listener = context.watch<LogController>();
     print(inventoryLog);
     return Flexible(
-      flex: 2,
+      flex: 1,
       child: Container(
-          margin: EdgeInsets.only(top: 45),
-          width: 250,
+          margin: EdgeInsets.only(top: 45, right: 10),
+          width: 400,
           height: 600,
           child: Card(
               color: Colors.white,
-              child: ListView(
-                padding: EdgeInsets.all(10),
-                children: inventoryLog.map((e) {
+              child: ListView.builder(
+                itemCount: inventoryLog.length,
+                itemBuilder: (context, index) {
+                  Inv e = inventoryLog[index];
                   String line = "${e.name}: ${e.count} ${e.type}";
-                  return (SizedBox(
-                      width: 200,
-                      height: 75,
-                      child: Card(
-                        color: e.color,
-                        child: Center(
-                          child: Text(
-                            line,
-                            style: TextStyle(
-                              fontSize: 24,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      )));
-                }).toList(),
+                  return ListItem(text: line, color: e.color, callback: callback, index: index,);
+                },
+                padding: EdgeInsets.all(10),
               ))),
+    );
+  }
+}
+
+class ListItem extends StatelessWidget {
+  const ListItem({required this.text, required this.color, required this.callback, required this.index});
+  final String text;
+  final Color color;
+  final Function callback;
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      flex: 1,
+      child: SizedBox(
+          width: 200,
+          height: 75,
+          child: Card(
+            color: color,
+            child: Center(
+              child: ListTile(
+                  title: Text(
+                    text,
+                    style: TextStyle(
+                      fontSize: 24,
+                      color: Colors.white,
+                    ),
+                  ),
+                  trailing: SizedBox(
+                    width: 70,
+                    child: IconButton(
+                      icon: Icon(Icons.delete),
+                      onPressed: () {
+                        callback(index);
+                      },
+                    )
+                  )),
+            ),
+          )),
     );
   }
 }
