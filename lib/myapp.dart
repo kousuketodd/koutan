@@ -53,10 +53,9 @@ class _HomePageState extends State<HomePage> {
       count = count.abs();
       inventoryLog.add(Inv(name, count, type, color));
     });
-    print(inventoryLog);
   }
 
-  void deleteItem(int index) {
+  void deleteListedItem(int index) {
     setState(() {
       inventoryLog.removeAt(index);
     });
@@ -64,7 +63,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    print('rebuilding');
     return Scaffold(
       body: Column(
         children: [
@@ -75,7 +73,7 @@ class _HomePageState extends State<HomePage> {
             ),
             Log(
               inventoryLog: inventoryLog,
-              callback: deleteItem,
+              callback: deleteListedItem,
             )
           ]),
         ],

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:koutan/inventory_storage.dart';
 import 'package:koutan/myapp.dart';
 
 class Log extends StatelessWidget {
