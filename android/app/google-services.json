@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "569739288280",
+    "project_id": "koutan-2454f",
+    "storage_bucket": "koutan-2454f.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:569739288280:android:a93a544e252f11c2cc01ad",
+        "android_client_info": {
+          "package_name": "com.example.koutan"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAQlhntuOY90oMp-YdauLLMZ1AF9R352dQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

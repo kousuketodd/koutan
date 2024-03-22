@@ -3,14 +3,15 @@ import "add_sub_popup.dart";
 
 class Item extends StatefulWidget {
   final Function callback;
-  const Item({Key? key, required this.callback});
+  final String name;
+  final String price;
+  const Item({Key? key, required this.callback, required this.name, required this.price});
 
   @override
   State<Item> createState() => _ItemState();
 }
 
 class _ItemState extends State<Item> {
-  String name = "Gyoza";
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -21,7 +22,7 @@ class _ItemState extends State<Item> {
             showDialog(
                 context: context,
                 builder: (BuildContext context) {
-                  return AddSubPopup(itemName: name, callback: widget.callback,);
+                  return AddSubPopup(itemName: widget.name, callback: widget.callback,);
                 });
           },
           child: Card(
@@ -29,13 +30,13 @@ class _ItemState extends State<Item> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 // USE SIZEDBOX FOR SPACING
                 children: [
-                  Text(name),
+                  Text(widget.name),
                   SizedBox(height: 10),
                   Image(
                     image: AssetImage('assets/gyoza.jpg'),
                   ),
                   SizedBox(height: 10),
-                  Text("Price: 50")
+                  Text("Price: ${widget.price}")
                 ]),
           ),
         ));
