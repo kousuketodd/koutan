@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:koutan/myapp.dart';
 
 class Log extends StatelessWidget {
-  Log({Key? key, required this.inventoryLog, required this.callback}) : super(key: key);
+  Log({required this.inventoryLog, required this.callback});
   final List<Inv> inventoryLog;
   final Function callback;
 
   @override
   Widget build(BuildContext context) {
-    print(inventoryLog);
     return Flexible(
       flex: 1,
       child: Container(

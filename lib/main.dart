@@ -14,8 +14,19 @@ LOG:
 made folder and items readable from firebase
 made folders and items writable to firebase
 tabs and items readable from firebase
+items stay when switching tabs
 
 TODO:
-fix items going away when switching tabs
+add monthly logs to database
+for a month's log, include:
+each category has its own box
+in each box, include:
+  ITEM NAME
+  UNIT PRICE
+  # REMAINING
+  # REMAINING * UNIT PRICE
+  COST FOR WHOLE CATEGORY
+
+THE LOG WILL HAVE THE TOTAL PRICE FOR EVERY CATEGORY AT THE BOTTOM
  */
 
