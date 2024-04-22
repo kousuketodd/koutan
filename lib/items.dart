@@ -4,8 +4,9 @@ import "add_sub_popup.dart";
 class Item extends StatefulWidget {
   final Function callback;
   final String name;
-  final String price;
-  const Item({Key? key, required this.callback, required this.name, required this.price});
+  final int price;
+  final String category;
+  const Item({Key? key, required this.callback, required this.name, required this.price, required this.category});
 
   @override
   State<Item> createState() => _ItemState();
@@ -22,7 +23,7 @@ class _ItemState extends State<Item> {
             showDialog(
                 context: context,
                 builder: (BuildContext context) {
-                  return AddSubPopup(itemName: widget.name, callback: widget.callback,);
+                  return AddSubPopup(itemName: widget.name, callback: widget.callback, category: widget.category,);
                 });
           },
           child: Card(

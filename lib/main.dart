@@ -16,17 +16,12 @@ made folders and items writable to firebase
 tabs and items readable from firebase
 items stay when switching tabs
 
-TODO:
-add monthly logs to database
-for a month's log, include:
-each category has its own box
-in each box, include:
-  ITEM NAME
-  UNIT PRICE
-  # REMAINING
-  # REMAINING * UNIT PRICE
-  COST FOR WHOLE CATEGORY
+made log summary, reads from database
 
-THE LOG WILL HAVE THE TOTAL PRICE FOR EVERY CATEGORY AT THE BOTTOM
+made logs writable
+
+TODO:
+make summary page pretty
+fix state setting when logging new items and deleting them
  */
 

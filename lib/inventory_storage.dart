@@ -17,7 +17,7 @@ class _InventoryStorageState extends State<InventoryStorage> {
   final categories = FirebaseFirestore.instance.collection('Categories');
   @override
   Widget build(BuildContext context) {
-    categories.doc(widget.folderName).get().then((DocumentSnapshot doc) {});
+    //categories.doc(widget.folderName).get().then((DocumentSnapshot doc) {});
     return FutureBuilder<DocumentSnapshot>(
       // future builder lets the code wait until the data is retrieved
       future: FirebaseFirestore.instance
@@ -35,13 +35,11 @@ class _InventoryStorageState extends State<InventoryStorage> {
         // prevents items being duplicated each time
         itemList.clear();
         docSnapshot.forEach((key, value) {
-          if (value["name"] != "" &&
-              value["name"] is String &&
-              value["price"] != "" &&
-              value["price"] is String) {
+          if (key != "dummy") {
             Item item = Item(
                 name: value["name"],
                 price: value["price"],
+                category: widget.folderName,
                 callback: widget.callback);
             itemList.add(item);
           }

@@ -43,43 +43,40 @@ class _TabsState extends State<Tabs> with TickerProviderStateMixin {
           TabController tabController =
               TabController(length: tabList.length, vsync: this);
           return Center(
-            child: Expanded(
-              flex: 2,
-              child: Column(
-                children: [
-                  // controls the dimensions of the tab bar
-                  SizedBox(
-                    width: 900,
-                    child: TabBar(
-                      controller: tabController,
-                      padding: EdgeInsets.only(
-                        left: 20,
-                        right: 20,
-                      ),
-                      labelColor: Colors.white,
-                      unselectedLabelColor: Colors.grey,
-                      indicatorSize: TabBarIndicatorSize.label,
-                      indicatorColor: Colors.transparent,
-                      indicator: BoxDecoration(
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(10),
-                          topRight: Radius.circular(10),
-                        ),
-                        color: Colors.grey,
-                      ),
-                      tabs: tabList,
+            child: Column(
+              children: [
+                // controls the dimensions of the tab bar
+                SizedBox(
+                  width: 900,
+                  child: TabBar(
+                    controller: tabController,
+                    padding: EdgeInsets.only(
+                      left: 20,
+                      right: 20,
                     ),
+                    labelColor: Colors.white,
+                    unselectedLabelColor: Colors.grey,
+                    indicatorSize: TabBarIndicatorSize.label,
+                    indicatorColor: Colors.transparent,
+                    indicator: BoxDecoration(
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(10),
+                        topRight: Radius.circular(10),
+                      ),
+                      color: Colors.grey,
+                    ),
+                    tabs: tabList,
                   ),
-                  // controls the dimensions of the pagelist
-                  SizedBox(
-                      width: 925,
-                      height: 600,
-                      child: TabBarView(
-                        controller: tabController,
-                        children: pageList,
-                      ))
-                ],
-              ),
+                ),
+                // controls the dimensions of the pagelist
+                SizedBox(
+                    width: 925,
+                    height: 500,
+                    child: TabBarView(
+                      controller: tabController,
+                      children: pageList,
+                    ))
+              ],
             ),
           );
         });

@@ -31,7 +31,8 @@ class Inv {
   int count;
   String type;
   Color color;
-  Inv(this.name, this.count, this.type, this.color);
+  String category;
+  Inv(this.name, this.count, this.type, this.color, this.category);
 
   @override
   String toString() {
@@ -41,43 +42,63 @@ class Inv {
 
 class _HomePageState extends State<HomePage> {
   List<Inv> inventoryLog = [];
-  void logItem(String name, int count) {
-    if (count == 0) {return;}
-    setState(() {
-      String type = "Received";
-      Color color = Colors.green;
-      if (count < 0) {
-        type = "Expended";
-        color = Colors.red;
-      }
-      count = count.abs();
-      inventoryLog.add(Inv(name, count, type, color));
-    });
+  // notified whenever user logs an item or deletes it from the log list
+  // this way, it only rebuilds the log and not the whole page
+  ValueNotifier<bool> _notifier = ValueNotifier(false);
+  void logItem(String name, int count, String category) {
+    if (count == 0) {
+      return;
+    }
+    String type = "Received";
+    Color color = Colors.green;
+    if (count < 0) {
+      type = "Expended";
+      color = Colors.red;
+    }
+    count = count.abs();
+    inventoryLog.add(Inv(name, count, type, color, category));
+    // notify
+    _notifier.value = !_notifier.value;
   }
 
   void deleteListedItem(int index) {
-    setState(() {
-      inventoryLog.removeAt(index);
-    });
+    inventoryLog.removeAt(index);
+    // notify
+    _notifier.value = !_notifier.value;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          EditSelect(),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Tabs(
-              callback: logItem,
-            ),
-            Log(
-              inventoryLog: inventoryLog,
-              callback: deleteListedItem,
-            )
-          ]),
-        ],
+      body: Center(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              EditSelect(),
+              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Tabs(
+                  callback: logItem,
+                ),
+                // wrap log in this so that only itself is rebuilt
+                ValueListenableBuilder(
+                    valueListenable: _notifier,
+                    builder: (BuildContext context, bool val, Widget? child) {
+                      return Log(
+                        inventoryLog: inventoryLog,
+                        callback: deleteListedItem,
+                      );
+                    }),
+              ]),
+            ],
+          ),
+        ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _notifier.dispose();
+    super.dispose();
   }
 }

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'admin_page.dart';
+import 'summary_page.dart';
 
 class EditSelect extends StatelessWidget {
   EditSelect({super.key});
 
-  List options = <String>["Inventory", "Edit", "Export"];
+  final List options = <String>["Inventory", "Edit", "Summary"];
 
   String option = "Inventory";
 
@@ -42,6 +43,9 @@ class EditSelect extends StatelessWidget {
                         else if (options[index] == "Edit") {
                           Navigator.push(context,
                           MaterialPageRoute(builder: (context) => AdminPage()));
+                        }
+                        else if (options[index] == "Summary") {
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => SummaryPage()));
                         }
                       },
                       child: Text(options[index])))),

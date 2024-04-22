@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 class AddSubPopup extends StatefulWidget {
   final String itemName;
+  final String category;
   final Function callback;
-  const AddSubPopup({Key? key, required this.itemName, required this.callback}) : super (key: key);
+  const AddSubPopup({Key? key, required this.itemName, required this.callback, required this.category}) : super (key: key);
 
   @override
   State<AddSubPopup> createState() => _AddSubPopupState();
@@ -64,7 +65,7 @@ class _AddSubPopupState extends State<AddSubPopup> {
                         )
                       ],
                     ),
-                    ItemEnterButton(callback: widget.callback, count: count, name: widget.itemName)
+                    ItemEnterButton(callback: widget.callback, count: count, name: widget.itemName, category: widget.category,)
                   ],
                 ),
               ))),
@@ -147,14 +148,15 @@ class ItemEnterButton extends StatelessWidget {
   final Function callback;
   final int count;
   final String name;
-  const ItemEnterButton({Key? key, required this.callback, required this.count, required this.name});
+  final String category;
+  const ItemEnterButton({Key? key, required this.callback, required this.count, required this.name, required this.category});
 
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton.extended(
         onPressed: () {
           // closes the popup
-          callback(name, count);
+          callback(name, count, category);
           Navigator.of(context).pop();
         },
         label: Text("Enter"),

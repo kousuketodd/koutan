@@ -2,60 +2,67 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class AdminPage extends StatelessWidget {
-  final Stream<QuerySnapshot> categories = FirebaseFirestore.instance.collection('Categories').snapshots();
   final db = FirebaseFirestore.instance.collection('Categories');
   void createFolder(String name) async {
     final folderName = name;
     final Map<String, dynamic> dummy = {
-      "name" : "",
+      "name": "",
       "price": "",
     };
-    await db.doc(folderName).set({"dummy" : dummy});
+    await db.doc(folderName).set({"dummy": dummy});
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(),
-        body: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            SizedBox(height: 30),
-            FloatingActionButton.extended(
-                onPressed: () {
-                  showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return FolderPopup(
-                          addCallback: createFolder,
-                        );
-                      });
-                },
-                label: Text("Add Category")),
-            SizedBox(height: 30),
-            SizedBox(
-                width: 1000,
-                height: 600,
-                child: Card(
-                    color: Colors.white,
-                    child: StreamBuilder<QuerySnapshot>(stream: categories, builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
-                      if (snapshot.hasError) {
-                        return Text("Something went wrong!");
-                      }
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return Text("Loading...");
-                      }
-
-                      final data = snapshot.requireData;
-                      return ListView.builder(
-                        itemCount: data.size,
-                        itemBuilder: (context, index) {
-                          return Folder(name: data.docs[index].id);
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(height: 30),
+              FloatingActionButton.extended(
+                  onPressed: () {
+                    showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return FolderPopup(
+                            addCallback: createFolder,
+                          );
+                        });
+                  },
+                  label: Text("Add Category")),
+              SizedBox(height: 30),
+              SizedBox(
+                  width: 1000,
+                  height: 600,
+                  child: Card(
+                      color: Colors.white,
+                      child: FutureBuilder<QuerySnapshot>(
+                        future: FirebaseFirestore.instance
+                            .collection("Categories")
+                            .get(),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasError) {
+                            return Text("Something went wrong!");
+                          }
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return Text("Loading...");
+                          }
+          
+                          final data = snapshot.requireData;
+                          return ListView.builder(
+                            itemCount: data.size,
+                            itemBuilder: (context, index) {
+                              return Folder(name: data.docs[index].id);
+                            },
+                          );
                         },
-                      );
-                    },)
-                    ))
-          ],
+                      )))
+            ],
+          ),
         ));
   }
 }
@@ -82,7 +89,7 @@ class FolderPopup extends StatelessWidget {
                 Container(
                     height: 50,
                     width: 120,
-                    color: Colors.grey,
+                    color: const Color.fromARGB(255, 224, 224, 224),
                     child: TextField(
                       onChanged: (value) => name = value,
                     ))
@@ -121,13 +128,13 @@ class _FolderState extends State<Folder> {
   final categories = FirebaseFirestore.instance.collection("Categories");
   //final Stream<QuerySnapshot> categories = FirebaseFirestore.instance.collection('Categories').snapshots();
 
-  void addItem(String name, String price) async {
+  void addItem(String name, int price) async {
     final String folderName = widget.name;
-    final Map<String, dynamic> itemData = {
-      "name": name,
-      "price": price
-    };
-    await db.collection("Categories").doc(folderName).set({name:itemData}, SetOptions(merge: true));
+    final Map<String, dynamic> itemData = {"name": name, "price": price};
+    await db
+        .collection("Categories")
+        .doc(folderName)
+        .set({name: itemData}, SetOptions(merge: true));
   }
 
   Icon arrow = Icon(Icons.arrow_right);
@@ -136,19 +143,17 @@ class _FolderState extends State<Folder> {
   @override
   Widget build(BuildContext context) {
     final docRef = categories.doc(widget.name);
-    docRef.get().then(
-      (DocumentSnapshot doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        // prevents items being duplicated each time
-        itemList.clear();
-        data.forEach((key, value) {
-          if (value["name"] != "" && value["name"] is String && value["price"] != "" && value["price"] is String) {
-            Item item = Item(name: value["name"], price: value["price"]);
-            itemList.add(item);
-          }
-        });
-      }
-    );
+    docRef.get().then((DocumentSnapshot doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      // prevents items being duplicated each time
+      itemList.clear();
+      data.forEach((key, value) {
+        if (key != "dummy") {
+          Item item = Item(name: value["name"], price: value["price"]);
+          itemList.add(item);
+        }
+      });
+    });
     if (isOpen) {
       visibleItemList = itemList;
       arrow = Icon(Icons.arrow_drop_down);
@@ -182,7 +187,7 @@ class _FolderState extends State<Folder> {
 class Item extends StatelessWidget {
   const Item({super.key, required this.name, required this.price});
   final String name;
-  final String price;
+  final int price;
 
   @override
   Widget build(BuildContext context) {
@@ -196,12 +201,12 @@ class Item extends StatelessWidget {
 
 class ItemPopup extends StatelessWidget {
   ItemPopup({super.key, required this.addCallback});
-  String name = "";
-  String price = "";
   final Function addCallback;
 
   @override
   Widget build(BuildContext context) {
+    String name = "";
+    int price = 0;
     return AlertDialog(
         backgroundColor: Colors.white,
         content: SizedBox(
@@ -226,7 +231,8 @@ class ItemPopup extends StatelessWidget {
                       height: 50,
                       width: 120,
                       color: Colors.grey,
-                      child: TextField(onChanged: (value) => price = value))
+                      child: TextField(
+                          onChanged: (value) => price = int.parse(value)))
                 ]),
                 SizedBox(height: 30),
                 FloatingActionButton.extended(
