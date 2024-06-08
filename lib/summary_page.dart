@@ -75,7 +75,7 @@ class _SummaryPageState extends State<SummaryPage> {
                           categoryCards.add(CategoryCard(categoryName: key, date: _selectedDate));
                         }
                       });
-                      return Wrap(children: categoryCards);
+                      return Center(child: Wrap(children: categoryCards));
                     }, // category cards
                   )
                 )
@@ -108,10 +108,10 @@ class CategoryCard extends StatelessWidget {
               .get(),
         ]),
         builder: ((context, snapshot) {
-          List<Text> names = [Text("Name")];
-          List<Text> prices = [Text("Prices")];
-          List<Text> quantity = [Text("Quantity")];
-          List<Text> itemTotals = [Text("Subtotal")];
+          List<Text> names = [Text("Name", style: TextStyle(fontWeight: FontWeight.bold))];
+          List<Text> prices = [Text("Prices", style: TextStyle(fontWeight: FontWeight.bold))];
+          List<Text> quantity = [Text("Quantity", style: TextStyle(fontWeight: FontWeight.bold))];
+          List<Text> itemTotals = [Text("Subtotal", style: TextStyle(fontWeight: FontWeight.bold))];
           num total = 0;
 
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -139,22 +139,31 @@ class CategoryCard extends StatelessWidget {
               });
             },
           );
-
+          double colSpacing = 50;
           return Card(
-              color: Colors.amber,
+              color: Color.fromARGB(255, 251, 207, 142),
               child: Container(
                   padding: EdgeInsets.all(30),
-                  height: 400,
-                  width: 400,
+                  height: 300,
+                  width: 450,
                   child: Column(
                     children: [
                       Row(children: [
                         Column(children: names),
+                        SizedBox(width: colSpacing),
                         Column(children: prices),
+                        SizedBox(width: colSpacing),
                         Column(children: quantity),
+                        SizedBox(width: colSpacing),
                         Column(children: itemTotals),
                       ]),
-                      Text("Total Price: $total")
+                      SizedBox(height: 50),
+                      Row(
+                        children: [
+                          SizedBox(width: 275),
+                          Text("Total Price: $total"),
+                        ],
+                      )
                     ],
                   )));
         }));

@@ -23,6 +23,7 @@ class AdminPage extends StatelessWidget {
             children: [
               SizedBox(height: 30),
               FloatingActionButton.extended(
+                backgroundColor: Colors.blue,
                   onPressed: () {
                     showDialog(
                         context: context,
@@ -32,7 +33,7 @@ class AdminPage extends StatelessWidget {
                           );
                         });
                   },
-                  label: Text("Add Category")),
+                  label: Text("Add Category", style: TextStyle(color: Colors.white))),
               SizedBox(height: 30),
               SizedBox(
                   width: 1000,
@@ -77,37 +78,20 @@ class FolderPopup extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: Colors.white,
-      content: SizedBox(
-        height: 150,
-        width: 200,
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Text("Name"),
-                SizedBox(width: 25),
-                Container(
-                    height: 50,
-                    width: 120,
-                    color: const Color.fromARGB(255, 224, 224, 224),
-                    child: TextField(
-                      onChanged: (value) => name = value,
-                    ))
-              ],
-            ),
-            SizedBox(height: 25),
-            FloatingActionButton.extended(
-                onPressed: () {
-                  if (name == "") {
-                    return;
-                  }
-                  Navigator.pop(context);
-                  addCallback(name);
-                },
-                label: Text("Submit"))
-          ],
-        ),
-      ),
+      title: Text("Name"),
+      content: TextField(
+        decoration: InputDecoration(hintText: "Enter a category name"),
+        onChanged: (value) => name = value),
+      actions: [
+        FloatingActionButton.extended(
+          backgroundColor: const Color.fromARGB(255, 65, 174, 69),
+            onPressed: () {
+              if (name != "") {
+                addCallback(name);
+              }
+            },
+            label: Text("Submit", style: TextStyle(color: Colors.white),))
+      ],
     );
   }
 }
@@ -209,39 +193,31 @@ class ItemPopup extends StatelessWidget {
     int price = 0;
     return AlertDialog(
         backgroundColor: Colors.white,
-        content: SizedBox(
-            height: 220,
-            width: 200,
-            child: Column(
-              children: [
-                Row(children: [
-                  Text("Name"),
-                  SizedBox(width: 30),
-                  Container(
-                      height: 50,
-                      width: 120,
-                      color: Colors.grey,
-                      child: TextField(onChanged: (value) => name = value))
-                ]),
-                SizedBox(height: 30),
-                Row(children: [
-                  Text("Price"),
-                  SizedBox(width: 30),
-                  Container(
-                      height: 50,
-                      width: 120,
-                      color: Colors.grey,
-                      child: TextField(
-                          onChanged: (value) => price = int.parse(value)))
-                ]),
-                SizedBox(height: 30),
-                FloatingActionButton.extended(
-                    onPressed: () {
-                      addCallback(name, price);
-                      Navigator.pop(context);
-                    },
-                    label: Text("Submit"))
-              ],
-            )));
+        title: Text("Name and Price"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              decoration: InputDecoration(hintText: "Enter item name"),
+              autofocus: true,
+              onChanged: (value) => name = value),
+            //SizedBox(height: 50),
+            TextField(
+              decoration: InputDecoration(hintText: "Enter item price"),
+              autofocus: true,
+              onChanged: (value) => price = int.parse(value)),
+          ],
+        ),
+        actions: [
+          FloatingActionButton(
+            backgroundColor: const Color.fromARGB(255, 65, 174, 69),
+              onPressed: () {
+                if (name != "" && price != 0) {
+                  addCallback(name, price);
+                }
+              },
+              child: Text("Submit", style: TextStyle(color: Colors.white)))
+
+        ],);
   }
 }

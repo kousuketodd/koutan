@@ -26,8 +26,7 @@ void submit(List<Inv> items, String date) async {
       // update the map
       // checks if it exists
       items[item.name] = (items[item.name] ?? 0) + count;
-    }
-    else {
+    } else {
       items[item.category] = count;
     }
     // link the updated category to the doc
@@ -46,7 +45,6 @@ class Log extends StatefulWidget {
 }
 
 class _LogState extends State<Log> {
-
   String _selectedDate = "Date";
 
   @override
@@ -61,16 +59,13 @@ class _LogState extends State<Log> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 FutureBuilder(
-                    future:
-                        FirebaseFirestore.instance.collection("Logs").get(),
+                    future: FirebaseFirestore.instance.collection("Logs").get(),
                     builder: (context, snapshot) {
-                      if (snapshot.connectionState ==
-                          ConnectionState.waiting) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
                         return Center(child: CircularProgressIndicator());
                       }
                       if (snapshot.hasError) {
-                        return Center(
-                            child: Text("Error: ${snapshot.error}"));
+                        return Center(child: Text("Error: ${snapshot.error}"));
                       }
                       List<QueryDocumentSnapshot> documents =
                           snapshot.data!.docs;
@@ -81,7 +76,8 @@ class _LogState extends State<Log> {
                               return TextButton(
                                   style: TextButton.styleFrom(
                                       minimumSize: Size(120, 40),
-                                      maximumSize: Size(120, 40)),
+                                      maximumSize: Size(120, 40),
+                                      backgroundColor: Colors.blue),
                                   onPressed: () {
                                     if (controller.isOpen) {
                                       controller.close();
@@ -89,7 +85,8 @@ class _LogState extends State<Log> {
                                       controller.open();
                                     }
                                   },
-                                  child: Text(_selectedDate));
+                                  child: Text(_selectedDate,
+                                      style: TextStyle(color: Colors.white)));
                             },
                             menuChildren: List<MenuItemButton>.generate(
                                 documents.length,
@@ -100,48 +97,48 @@ class _LogState extends State<Log> {
                                             documents[index].id.toString();
                                       });
                                     },
-                                    child: Text(
-                                        documents[index].id.toString())))),
+                                    child:
+                                        Text(documents[index].id.toString())))),
                       ]));
                     }),
+                SizedBox(width: 40),
                 FloatingActionButton.extended(
                   heroTag: null,
-                  label: Text("Enter a new date"),
+                  backgroundColor: Colors.blue,
+                  label: Text(
+                    "Enter a new date",
+                    style: TextStyle(color: Colors.white),
+                  ),
                   onPressed: () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: ((context) => AlertDialog(
-                                  backgroundColor: Colors.grey,
-                                  content: SizedBox(
-                                    width: 400,
-                                    height: 200,
-                                    child: Column(
-                                      children: [
-                                        Text("Enter a new date: "),
-                                        Container(
-                                          height: 50,
-                                          width: 120,
-                                          color: const Color.fromARGB(255, 224, 224, 224),
-                                          child: TextField(onChanged: (value) {
-                                            _selectedDate = value;
-                                          },)
-                                        ),
-                                        FloatingActionButton(
-                                          heroTag: null,
-                                          onPressed: () {
-                                          if (_selectedDate.isNotEmpty) {
-                                            setState(() async {
-                                              _selectedDate = _selectedDate;
-                                              Navigator.pop(context);
-                                            });
-                                          }
-                                        },
-                                        child: Text("Submit"),)
-                                      ]
-                                    )
-                                  ),
-                                ))));
+                    showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                                backgroundColor: Colors.white,
+                                title: Text("Date"),
+                                content: TextField(
+                                  autofocus: true,
+                                  decoration: InputDecoration(hintText: 'Enter a new date'),
+                                  onChanged: (value) {
+                                    _selectedDate = value;
+                                  },
+                                ),
+                                actions: [
+                                  FloatingActionButton(
+                                    heroTag: null,
+                                    backgroundColor:
+                                        const Color.fromARGB(255, 65, 174, 69),
+                                    onPressed: () {
+                                      if (_selectedDate.isNotEmpty) {
+                                        setState(() async {
+                                          _selectedDate = _selectedDate;
+                                          Navigator.pop(context);
+                                        });
+                                      }
+                                    },
+                                    child: Text("Submit",
+                                        style: TextStyle(color: Colors.white)),
+                                  )
+                                ]));
                   },
                 )
               ],
@@ -167,25 +164,28 @@ class _LogState extends State<Log> {
                   ),
                 )),
             FloatingActionButton(
-              heroTag: null,
-              onPressed: () {
-                if (_selectedDate != "Date") {
-                  setState(() {
-                    List<Inv> copy = List.from(widget.inventoryLog);
-                    submit(copy, _selectedDate);
-                    print("cleared");
-                    widget.inventoryLog.clear();
-                  });
-                }
-              }, 
-              child: Text("Submit")
-            )
+                heroTag: null,
+                backgroundColor: const Color.fromARGB(255, 65, 174, 69),
+                onPressed: () {
+                  if (_selectedDate != "Date") {
+                    setState(() {
+                      List<Inv> copy = List.from(widget.inventoryLog);
+                      submit(copy, _selectedDate);
+                      print("cleared");
+                      widget.inventoryLog.clear();
+                    });
+                  }
+                },
+                child: Text(
+                  "Submit",
+                  style: TextStyle(color: Colors.white),
+                ))
           ],
         ));
   }
 }
 
-class ListItem extends StatefulWidget {
+class ListItem extends StatelessWidget {
   const ListItem(
       {required this.text,
       required this.color,
@@ -197,23 +197,18 @@ class ListItem extends StatefulWidget {
   final int index;
 
   @override
-  State<ListItem> createState() => _ListItemState();
-}
-
-class _ListItemState extends State<ListItem> {
-  @override
   Widget build(BuildContext context) {
     return SizedBox(
         width: 200,
         height: 75,
         child: Card(
-          color: widget.color,
+          color: color,
           child: Center(
             child: ListTile(
                 title: Text(
-                  widget.text,
+                  text,
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: 20,
                     color: Colors.white,
                   ),
                 ),
@@ -221,8 +216,8 @@ class _ListItemState extends State<ListItem> {
                     width: 70,
                     child: IconButton(
                       icon: Icon(Icons.delete),
-                      onPressed: () {           
-                        widget.callback(widget.index);
+                      onPressed: () {
+                        callback(index);
                       },
                     ))),
           ),
