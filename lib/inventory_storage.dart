@@ -39,6 +39,7 @@ class _InventoryStorageState extends State<InventoryStorage> {
             Item item = Item(
                 name: value["name"],
                 price: value["price"],
+                url: value["image"],
                 category: widget.folderName,
                 callback: widget.callback);
             itemList.add(item);

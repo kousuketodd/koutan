@@ -20,8 +20,11 @@ made log summary, reads from database
 
 made logs writable
 
+finished image upload
+
 TODO:
 make summary page pretty
 fix state setting when logging new items and deleting them
+
  */
 

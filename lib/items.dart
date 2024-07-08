@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import "add_sub_popup.dart";
 
-class Item extends StatefulWidget {
+class Item extends StatelessWidget {
   final Function callback;
   final String name;
   final int price;
   final String category;
-  const Item({Key? key, required this.callback, required this.name, required this.price, required this.category});
+  final String url;
+  const Item(
+      {Key? key,
+      required this.callback,
+      required this.name,
+      required this.price,
+      required this.category,
+      required this.url});
 
-  @override
-  State<Item> createState() => _ItemState();
-}
-
-class _ItemState extends State<Item> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -23,7 +25,11 @@ class _ItemState extends State<Item> {
             showDialog(
                 context: context,
                 builder: (BuildContext context) {
-                  return AddSubPopup(itemName: widget.name, callback: widget.callback, category: widget.category,);
+                  return AddSubPopup(
+                    itemName: name,
+                    callback: callback,
+                    category: category,
+                  );
                 });
           },
           child: Card(
@@ -31,13 +37,11 @@ class _ItemState extends State<Item> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 // USE SIZEDBOX FOR SPACING
                 children: [
-                  Text(widget.name),
+                  Text(name),
                   SizedBox(height: 10),
-                  Image(
-                    image: AssetImage('assets/gyoza.jpg'),
-                  ),
+                  Image.network(url),
                   SizedBox(height: 10),
-                  Text("Price: ${widget.price}")
+                  Text("Price: $price")
                 ]),
           ),
         ));

@@ -75,19 +75,26 @@ class _HomePageState extends State<HomePage> {
           child: Column(
             children: [
               EditSelect(),
-              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Tabs(
-                  callback: logItem,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center, 
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                Flexible(
+                  child: Tabs(
+                    callback: logItem,
+                  ),
                 ),
                 // wrap log in this so that only itself is rebuilt
-                ValueListenableBuilder(
-                    valueListenable: _notifier,
-                    builder: (BuildContext context, bool val, Widget? child) {
-                      return Log(
-                        inventoryLog: inventoryLog,
-                        callback: deleteListedItem,
-                      );
-                    }),
+                Flexible(
+                  child: ValueListenableBuilder(
+                      valueListenable: _notifier,
+                      builder: (BuildContext context, bool val, Widget? child) {
+                        return Log(
+                          inventoryLog: inventoryLog,
+                          callback: deleteListedItem,
+                        );
+                      }),
+                ),
               ]),
             ],
           ),
