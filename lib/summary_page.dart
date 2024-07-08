@@ -148,6 +148,8 @@ class CategoryCard extends StatelessWidget {
                   width: 450,
                   child: Column(
                     children: [
+                      Text(categoryName, style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),),
+                      SizedBox(height: 25),
                       Row(children: [
                         Column(children: names),
                         SizedBox(width: colSpacing),
