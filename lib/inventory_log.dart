@@ -177,7 +177,6 @@ class _LogState extends State<Log> {
                     setState(() {
                       List<Inv> copy = List.from(widget.inventoryLog);
                       submit(copy, _selectedDate);
-                      print("cleared");
                       widget.inventoryLog.clear();
                     });
                   }
