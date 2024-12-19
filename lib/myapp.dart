@@ -77,7 +77,6 @@ class _HomePageState extends State<HomePage> {
               EditSelect(),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center, 
-                mainAxisSize: MainAxisSize.min,
                 children: [
                 Flexible(
                   child: Tabs(

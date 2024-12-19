@@ -18,8 +18,8 @@ class Item extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-        width: 120,
-        height: 170,
+        width: 200,
+        height: 200,
         child: GestureDetector(
           onTap: () {
             showDialog(
@@ -32,18 +32,20 @@ class Item extends StatelessWidget {
                   );
                 });
           },
-          child: Card(
-            child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                // USE SIZEDBOX FOR SPACING
-                children: [
+          child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              // USE SIZEDBOX FOR SPACING
+              children: [
+                Image.network(url),
+                SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
                   Text(name),
-                  SizedBox(height: 10),
-                  Image.network(url),
-                  SizedBox(height: 10),
-                  Text("Price: $price")
-                ]),
-          ),
+                  SizedBox(width: 10),
+                  Text("$price円")
+                ],)
+              ]),
         ));
   }
 }

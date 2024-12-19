@@ -70,7 +70,7 @@ class _TabsState extends State<Tabs> with TickerProviderStateMixin {
                 ),
                 // controls the dimensions of the pagelist
                 SizedBox(
-                    width: 925,
+                    width: 900,
                     height: 500,
                     child: TabBarView(
                       controller: tabController,

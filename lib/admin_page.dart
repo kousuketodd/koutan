@@ -5,9 +5,35 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
+void deleteItem(String folderName, String itemName, String path) async {
+  // only delete image if it's not a dummy
+  if (itemName != "dummy") {
+    // obtain storage reference
+    Reference referenceRoot = FirebaseStorage.instance.ref();
+    // delete image from storage
+    await referenceRoot.child(path).delete();
+  }
+  // delete firestore field
+  await FirebaseFirestore.instance
+      .collection("Categories")
+      .doc(folderName)
+      .update({itemName: FieldValue.delete()});
+}
+
+void deleteFolder(String name) async {
+  final ref =
+      await FirebaseFirestore.instance.collection("Categories").doc(name).get();
+  final data = ref.data();
+  data!.forEach((key, value) {
+    deleteItem(name, value["name"], value["path"] ?? "");
+  });
+  await FirebaseFirestore.instance.collection("Categories").doc(name).delete();
+}
+
 class AdminPage extends StatelessWidget {
   final categories = FirebaseFirestore.instance.collection('Categories');
-  final obtainedCategories = FirebaseFirestore.instance.collection('Categories').get();
+  final obtainedCategories =
+      FirebaseFirestore.instance.collection('Categories').get();
   void createFolder(String name) async {
     final Map<String, dynamic> dummy = {
       "name": "",
@@ -122,7 +148,9 @@ class _FolderState extends State<Folder> {
   void addItem(String name, int price, XFile? file) async {
     final String folderName = widget.name;
     String imageUrl = '';
-    if (file == null) {return;}
+    if (file == null) {
+      return;
+    }
 
     // 2. upload to firebase storage
     // generate a unique name using the current date
@@ -148,13 +176,17 @@ class _FolderState extends State<Folder> {
     final Map<String, dynamic> itemData = {
       "name": name,
       "price": price,
-      "image": imageUrl
+      // used for fetching image from storage
+      "image": imageUrl,
+      // used for delete reference
+      "path": "images/$uniqueFileName"
     };
     await db
         .collection("Categories")
         .doc(folderName)
         .set({name: itemData}, SetOptions(merge: true));
   }
+
   Icon arrow = Icon(Icons.arrow_right);
   bool isOpen = false;
 
@@ -174,7 +206,14 @@ class _FolderState extends State<Folder> {
           itemList.clear();
           data.forEach((key, value) {
             if (key != "dummy") {
-              Item item = Item(name: value["name"], price: value["price"], url: value["image"]);
+              Item item = Item(
+                name: value["name"],
+                price: value["price"],
+                url: value["image"],
+                folderName: widget.name,
+                path: value["path"],
+              );
+
               itemList.add(item);
             }
           });
@@ -194,15 +233,25 @@ class _FolderState extends State<Folder> {
                       onPressed: () => setState(() => isOpen = !isOpen),
                       icon: arrow),
                   title: Text(widget.name),
-                  trailing: IconButton(
-                      onPressed: () {
-                        showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return ItemPopup(addCallback: addItem);
-                            });
-                      },
-                      icon: Icon(Icons.add))),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                          onPressed: () {
+                            showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return ItemPopup(addCallback: addItem);
+                                });
+                          },
+                          icon: Icon(Icons.add)),
+                      IconButton(
+                          onPressed: () {
+                            deleteFolder(widget.name);
+                          },
+                          icon: Icon(Icons.delete))
+                    ],
+                  )),
               Padding(
                   padding: const EdgeInsets.only(left: 16),
                   child: Column(children: visibleItemList))
@@ -213,23 +262,39 @@ class _FolderState extends State<Folder> {
 }
 
 class Item extends StatelessWidget {
-  const Item({super.key, required this.name, required this.price, required this.url});
+  const Item(
+      {super.key,
+      required this.name,
+      required this.price,
+      required this.url,
+      required this.folderName,
+      required this.path});
   final String name;
   final int price;
   final String url;
+  final String folderName;
+  final String path;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
         title: Text(name),
         subtitle: Text("$price円"),
-        leading: Container(
-          margin: EdgeInsets.only(left: 50),
-          height: 80,
-          width: 80,
-          child: Image.network(url),
-        )
-    );
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              onPressed: () => deleteItem(folderName, name, path),
+              icon: Icon(Icons.delete),
+            ),
+            Container(
+              margin: EdgeInsets.only(left: 50),
+              height: 80,
+              width: 80,
+              child: Image.network(url),
+            ),
+          ],
+        ));
   }
 }
 

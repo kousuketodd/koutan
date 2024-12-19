@@ -52,7 +52,7 @@ class _InventoryStorageState extends State<InventoryStorage> {
             right: 10,
           ),
           child: Card(
-            color: Colors.grey,
+            color: Colors.white,
             child: ListView(
               padding: EdgeInsets.all(50),
               children: [

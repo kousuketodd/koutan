@@ -6,7 +6,6 @@ import 'package:koutan/myapp.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 void submit(List<Inv> items, String date) async {
-  print(items);
   final docRef = FirebaseFirestore.instance.collection("Logs").doc(date);
   final docSnapshot = await docRef.get();
   Map<String, dynamic> categories = docSnapshot.data()!;
@@ -23,15 +22,8 @@ void submit(List<Inv> items, String date) async {
     */
     Map<String, dynamic> items = categories[item.category] ?? {};
 
-    // if the category exists
-    if (items.isNotEmpty) {
-      // update the map
-      // checks if it exists
-      items[item.name] = (items[item.name] ?? 0) + count;
-    } else {
-      items[item.category] = count;
-    }
-    // link the updated category to the doc
+    items[item.name] = (items[item.name] ?? 0) + count;
+
     categories[item.category] = items;
   }
   await docRef.update(categories);
@@ -152,7 +144,7 @@ class _LogState extends State<Log> {
             Card(
                 color: Colors.white,
                 child: SizedBox(
-                  width: 300,
+                  width: 350,
                   height: 400,
                   child: ListView.builder(
                     itemCount: widget.inventoryLog.length,
