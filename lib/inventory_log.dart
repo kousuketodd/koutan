@@ -6,8 +6,12 @@ import 'package:koutan/myapp.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 void submit(List<Inv> items, String date) async {
-  final docRef = FirebaseFirestore.instance.collection("Logs").doc(date);
-  final docSnapshot = await docRef.get();
+  var docRef = FirebaseFirestore.instance.collection("Logs").doc(date);
+  var docSnapshot = await docRef.get();
+  if (!docSnapshot.exists) {
+    await docRef.set({"dummy": {"name": 5}});
+    docSnapshot = await docRef.get();
+  }
   Map<String, dynamic> categories = docSnapshot.data()!;
   for (Inv item in items) {
     num count = item.count;
@@ -126,7 +130,7 @@ class _LogState extends State<Log> {
                                           const Color.fromARGB(255, 65, 174, 69),
                                       onPressed: () {
                                         if (_selectedDate.isNotEmpty) {
-                                          setState(() async {
+                                          setState(() {
                                             _selectedDate = _selectedDate;
                                             Navigator.pop(context);
                                           });

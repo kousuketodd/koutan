@@ -30,17 +30,27 @@ void deleteFolder(String name) async {
   await FirebaseFirestore.instance.collection("Categories").doc(name).delete();
 }
 
+void editFolder(String name, String newName) async {
+  final categories = FirebaseFirestore.instance.collection("Categories");
+  final ref = await categories.doc(name).get();
+  final data = ref.data()!;
+  await categories.doc(newName).set(data);
+  await categories.doc(name).delete();
+}
+
+void createFolder(String name) async {
+  final categories = FirebaseFirestore.instance.collection("Categories");
+  final Map<String, dynamic> dummy = {
+    "name": "",
+    "price": "",
+  };
+  await categories.doc(name).set({"dummy": dummy});
+}
+
 class AdminPage extends StatelessWidget {
   final categories = FirebaseFirestore.instance.collection('Categories');
   final obtainedCategories =
       FirebaseFirestore.instance.collection('Categories').get();
-  void createFolder(String name) async {
-    final Map<String, dynamic> dummy = {
-      "name": "",
-      "price": "",
-    };
-    await categories.doc(name).set({"dummy": dummy});
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -117,7 +127,7 @@ class FolderPopup extends StatelessWidget {
             backgroundColor: const Color.fromARGB(255, 65, 174, 69),
             onPressed: () {
               if (name != "") {
-                addCallback(name);
+                addCallback;
                 Navigator.pop(context);
               }
             },
@@ -245,6 +255,39 @@ class _FolderState extends State<Folder> {
                                 });
                           },
                           icon: Icon(Icons.add)),
+                      IconButton(
+                          onPressed: () {
+                            showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  String folderName = "";
+                                  return AlertDialog(
+                                    backgroundColor: Colors.white,
+                                    title: Text("Name"),
+                                    content: TextField(
+                                        decoration: InputDecoration(
+                                            hintText: "Enter new category name"),
+                                        onChanged: (value) => folderName = value),
+                                    actions: [
+                                      FloatingActionButton.extended(
+                                          backgroundColor: const Color.fromARGB(
+                                              255, 65, 174, 69),
+                                          onPressed: () {
+                                            if (folderName != "") {
+                                              editFolder(widget.name, folderName);
+                                              Navigator.pop(context);
+                                            }
+                                          },
+                                          label: Text(
+                                            "Submit",
+                                            style:
+                                                TextStyle(color: Colors.white),
+                                          ))
+                                    ],
+                                  );
+                                });
+                          },
+                          icon: Icon(Icons.edit)),
                       IconButton(
                           onPressed: () {
                             deleteFolder(widget.name);

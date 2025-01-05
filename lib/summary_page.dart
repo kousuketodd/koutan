@@ -80,7 +80,7 @@ class _SummaryPageState extends State<SummaryPage> {
                                     "Enter a date in the dropdown above!"));
                           }
                           total = 0;
-                          pendingUpdates = 0;
+                          pendingUpdates = 1;
                           _completer = Completer<void>();
                           List<CategoryCard> categoryCards = [];
                           final data =
