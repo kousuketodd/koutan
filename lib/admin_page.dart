@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:js_util';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -327,11 +328,15 @@ class Item extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
+              onPressed: () {},
+              icon: Icon(Icons.edit)
+            ),
+            IconButton(
               onPressed: () => deleteItem(folderName, name, path),
               icon: Icon(Icons.delete),
             ),
             Container(
-              margin: EdgeInsets.only(left: 50),
+              margin: EdgeInsets.only(left: 30),
               height: 80,
               width: 80,
               child: Image.network(url),
@@ -387,6 +392,66 @@ class ItemPopup extends StatelessWidget {
             onPressed: () {
               if (name != "" && price != 0) {
                 addCallback(name, price, file);
+                Navigator.pop(context);
+              }
+            },
+            child: Text("Submit", style: TextStyle(color: Colors.white)))
+      ],
+    );
+  }
+}
+
+class EditItemPopup extends StatelessWidget {
+  EditItemPopup({super.key, required this.addCallback, required this.deleteCallback, required this.name, required this.price, required this.file});
+  final Function addCallback;
+  final Function deleteCallback;
+  final name;
+  final price;
+  final file;
+
+  Future<XFile?> addImage() async {
+    // 1. pick image
+    ImagePicker imagePicker = ImagePicker();
+    XFile? file = await imagePicker.pickImage(source: ImageSource.gallery);
+    return file;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    XFile? newFile = file;
+    String newName = name;
+    int newPrice = price;
+    return AlertDialog(
+      backgroundColor: Colors.white,
+      title: Text("Name and Price"),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+              decoration: InputDecoration(hintText: "Enter item name"),
+              autofocus: true,
+              onChanged: (value) => newName = value),
+          TextField(
+              decoration: InputDecoration(hintText: "Enter item price"),
+              autofocus: true,
+              onChanged: (value) => newPrice = int.parse(value)),
+          SizedBox(height: 25),
+          FloatingActionButton.extended(
+              onPressed: () async {
+                newFile = await addImage();
+              },
+              label: Row(
+                children: [Icon(Icons.image), Icon(Icons.add)],
+              ))
+        ],
+      ),
+      actions: [
+        FloatingActionButton(
+            backgroundColor: const Color.fromARGB(255, 65, 174, 69),
+            onPressed: () {
+              if (name != "" && price != 0) {
+                addCallback(name, price, file);
+                //deleteCallback(o, property)
                 Navigator.pop(context);
               }
             },
