@@ -1,461 +1,394 @@
-import 'dart:io';
-import 'dart:js_util';
+// lib/admin_page.dart
 
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-
-void deleteItem(String folderName, String itemName, String path) async {
-  // only delete image if it's not a dummy
-  if (itemName != "dummy") {
-    // obtain storage reference
-    Reference referenceRoot = FirebaseStorage.instance.ref();
-    // delete image from storage
-    await referenceRoot.child(path).delete();
-  }
-  // delete firestore field
-  await FirebaseFirestore.instance
-      .collection("Categories")
-      .doc(folderName)
-      .update({itemName: FieldValue.delete()});
-}
-
-void deleteFolder(String name) async {
-  final ref =
-      await FirebaseFirestore.instance.collection("Categories").doc(name).get();
-  final data = ref.data();
-  data!.forEach((key, value) {
-    deleteItem(name, value["name"], value["path"] ?? "");
-  });
-  await FirebaseFirestore.instance.collection("Categories").doc(name).delete();
-}
-
-void editFolder(String name, String newName) async {
-  final categories = FirebaseFirestore.instance.collection("Categories");
-  final ref = await categories.doc(name).get();
-  final data = ref.data()!;
-  await categories.doc(newName).set(data);
-  await categories.doc(name).delete();
-}
-
-void createFolder(String name) async {
-  final categories = FirebaseFirestore.instance.collection("Categories");
-  final Map<String, dynamic> dummy = {
-    "name": "",
-    "price": "",
-  };
-  await categories.doc(name).set({"dummy": dummy});
-}
 
 class AdminPage extends StatelessWidget {
-  final categories = FirebaseFirestore.instance.collection('Categories');
-  final obtainedCategories =
-      FirebaseFirestore.instance.collection('Categories').get();
+  static final _categories = FirebaseFirestore.instance.collection('Categories');
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              SizedBox(height: 30),
-              FloatingActionButton.extended(
-                  backgroundColor: Colors.blue,
-                  onPressed: () {
-                    showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return FolderPopup(
-                            addCallback: createFolder,
-                          );
-                        });
-                  },
-                  label: Text("Add Category",
-                      style: TextStyle(color: Colors.white))),
-              SizedBox(height: 30),
-              SizedBox(
-                  width: 1000,
-                  height: 600,
-                  child: Card(
-                      color: Colors.white,
-                      child: FutureBuilder<QuerySnapshot>(
-                        // can't obtain future here so that it can refresh on change
-                        future: obtainedCategories,
-                        builder: (context, snapshot) {
-                          if (snapshot.hasError) {
-                            return Text("${snapshot.error}");
-                          }
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return CircularProgressIndicator();
-                          }
-
-                          final data = snapshot.requireData;
-                          return ListView.builder(
-                            itemCount: data.size,
-                            itemBuilder: (context, index) {
-                              return Folder(name: data.docs[index].id);
-                            },
-                          );
-                        },
-                      )))
-            ],
+      appBar: AppBar(title: Text('Categories')),
+      floatingActionButton: FloatingActionButton.extended(
+        icon: Icon(Icons.add),
+        label: Text('Add Category'),
+        onPressed: () => showDialog(
+          context: context,
+          builder: (_) => _CategoryDialog(
+            onSubmit: (name) => _categories.add({'name': name, 'items': {}}),
           ),
-        ));
-  }
-}
+        ),
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: _categories.snapshots(),
+        builder: (ctx, snap) {
+          if (snap.hasError) return Center(child: Text('Error: ${snap.error}'));
+          if (!snap.hasData)  return Center(child: CircularProgressIndicator());
 
-class FolderPopup extends StatelessWidget {
-  FolderPopup({super.key, required this.addCallback});
-  final Function addCallback;
+          final docs = snap.data!.docs;
+          if (docs.isEmpty) return Center(child: Text('No categories yet.'));
 
-  String name = "";
+          return ListView(
+            padding: const EdgeInsets.all(12),
+            children: docs.map((doc) {
+              final data = doc.data()! as Map<String, dynamic>;
+              final catId   = doc.id;
+              final catName = data['name'] as String? ?? '';
+              final items   = Map<String, dynamic>.from(data['items'] ?? {});
 
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: Colors.white,
-      title: Text("Name"),
-      content: TextField(
-          decoration: InputDecoration(hintText: "Enter a category name"),
-          onChanged: (value) => name = value),
-      actions: [
-        FloatingActionButton.extended(
-            backgroundColor: const Color.fromARGB(255, 65, 174, 69),
-            onPressed: () {
-              if (name != "") {
-                addCallback;
-                Navigator.pop(context);
-              }
-            },
-            label: Text(
-              "Submit",
-              style: TextStyle(color: Colors.white),
-            ))
-      ],
+              return _CategoryTile(
+                categoryId: catId,
+                categoryName: catName,
+                items: items,
+              );
+            }).toList(),
+          );
+        },
+      ),
     );
   }
 }
 
-class Folder extends StatefulWidget {
-  Folder({super.key, required this.name});
-  final String name;
+/// --- CATEGORY TILE (EXPANSION) ---
+class _CategoryTile extends StatelessWidget {
+  final String categoryId;
+  final String categoryName;
+  final Map<String, dynamic> items;
+  static final _categories = AdminPage._categories;
 
-  @override
-  State<Folder> createState() => _FolderState();
-}
+  const _CategoryTile({
+    required this.categoryId,
+    required this.categoryName,
+    required this.items,
+  });
 
-// -------------------- READ ITEM LIST --------------------------
-class _FolderState extends State<Folder> {
-  List<Item> itemList = [];
-  List<Item> visibleItemList = [];
-  final db = FirebaseFirestore.instance;
-  final categories = FirebaseFirestore.instance.collection("Categories");
-
-  void addItem(String name, int price, XFile? file) async {
-    final String folderName = widget.name;
-    String imageUrl = '';
-    if (file == null) {
-      return;
-    }
-
-    // 2. upload to firebase storage
-    // generate a unique name using the current date
-    String uniqueFileName = DateTime.now().millisecondsSinceEpoch.toString();
-    // get a reference to storage root
-    Reference referenceRoot = FirebaseStorage.instance.ref();
-    Reference referenceDirImages = referenceRoot.child('images');
-
-    // create a reference for the image to be stored
-    Reference referenceImageToUpload = referenceDirImages.child(uniqueFileName);
-    // handle errors
-    try {
-      // store the file
-      await referenceImageToUpload.putFile(File(file.path));
-      // get download url
-      imageUrl = await referenceImageToUpload.getDownloadURL();
-    } catch (error) {
-      return;
-    }
-    if (imageUrl.isEmpty) {
-      return;
-    }
-    final Map<String, dynamic> itemData = {
-      "name": name,
-      "price": price,
-      // used for fetching image from storage
-      "image": imageUrl,
-      // used for delete reference
-      "path": "images/$uniqueFileName"
-    };
-    await db
-        .collection("Categories")
-        .doc(folderName)
-        .set({name: itemData}, SetOptions(merge: true));
+  Future<void> _deleteCategory(BuildContext ctx) async {
+    final ok = await showDialog<bool>(
+      context: ctx,
+      builder: (_) => AlertDialog(
+        title: Text('Delete Category'),
+        content: Text('Are you sure you want to delete “$categoryName”?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true),  child: Text('Delete', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+    if (ok == true) await _categories.doc(categoryId).delete();
   }
-
-  Icon arrow = Icon(Icons.arrow_right);
-  bool isOpen = false;
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<DocumentSnapshot>(
-        future: categories.doc(widget.name).get(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
-          }
-          final data = snapshot.data!.data() as Map<String, dynamic>;
-          // add items to item list
-          itemList.clear();
-          data.forEach((key, value) {
-            if (key != "dummy") {
-              Item item = Item(
-                name: value["name"],
-                price: value["price"],
-                url: value["image"],
-                folderName: widget.name,
-                path: value["path"],
-              );
-
-              itemList.add(item);
-            }
-          });
-          // make list visible and change arrow icon
-          if (isOpen) {
-            visibleItemList = itemList;
-            arrow = Icon(Icons.arrow_drop_down);
-          } else {
-            visibleItemList = [];
-            arrow = Icon(Icons.arrow_right);
-          }
-
-          return Column(
-            children: [
-              ListTile(
-                  leading: IconButton(
-                      onPressed: () => setState(() => isOpen = !isOpen),
-                      icon: arrow),
-                  title: Text(widget.name),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                          onPressed: () {
-                            showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return ItemPopup(addCallback: addItem);
-                                });
-                          },
-                          icon: Icon(Icons.add)),
-                      IconButton(
-                          onPressed: () {
-                            showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  String folderName = "";
-                                  return AlertDialog(
-                                    backgroundColor: Colors.white,
-                                    title: Text("Name"),
-                                    content: TextField(
-                                        decoration: InputDecoration(
-                                            hintText: "Enter new category name"),
-                                        onChanged: (value) => folderName = value),
-                                    actions: [
-                                      FloatingActionButton.extended(
-                                          backgroundColor: const Color.fromARGB(
-                                              255, 65, 174, 69),
-                                          onPressed: () {
-                                            if (folderName != "") {
-                                              editFolder(widget.name, folderName);
-                                              Navigator.pop(context);
-                                            }
-                                          },
-                                          label: Text(
-                                            "Submit",
-                                            style:
-                                                TextStyle(color: Colors.white),
-                                          ))
-                                    ],
-                                  );
-                                });
-                          },
-                          icon: Icon(Icons.edit)),
-                      IconButton(
-                          onPressed: () {
-                            deleteFolder(widget.name);
-                          },
-                          icon: Icon(Icons.delete))
-                    ],
-                  )),
-              Padding(
-                  padding: const EdgeInsets.only(left: 16),
-                  child: Column(children: visibleItemList))
-            ],
-          );
-        });
-  }
-}
-
-class Item extends StatelessWidget {
-  const Item(
-      {super.key,
-      required this.name,
-      required this.price,
-      required this.url,
-      required this.folderName,
-      required this.path});
-  final String name;
-  final int price;
-  final String url;
-  final String folderName;
-  final String path;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-        title: Text(name),
-        subtitle: Text("$price円"),
-        leading: Row(
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      elevation: 2,
+      child: ExpansionTile(
+        title: Text(categoryName, style: TextStyle(fontWeight: FontWeight.bold)),
+        trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              onPressed: () {},
-              icon: Icon(Icons.edit)
+              icon: Icon(Icons.edit, color: Colors.orange),
+              onPressed: () => showDialog(
+                context: context,
+                builder: (_) => _CategoryDialog(
+                  initialName: categoryName,
+                  onSubmit: (newName) => _categories.doc(categoryId).update({'name': newName}),
+                ),
+              ),
             ),
             IconButton(
-              onPressed: () => deleteItem(folderName, name, path),
-              icon: Icon(Icons.delete),
-            ),
-            Container(
-              margin: EdgeInsets.only(left: 30),
-              height: 80,
-              width: 80,
-              child: Image.network(url),
+              icon: Icon(Icons.delete, color: Colors.red),
+              onPressed: () => _deleteCategory(context),
             ),
           ],
-        ));
+        ),
+        children: [
+          if (items.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text('No items yet.', style: TextStyle(fontStyle: FontStyle.italic)),
+            ),
+          ...items.entries.map((e) {
+            final itemId   = e.key;
+            final data     = e.value as Map<String, dynamic>;
+            return _ItemTile(
+              categoryId: categoryId,
+              itemId: itemId,
+              data: data,
+            );
+          }),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              icon: Icon(Icons.add),
+              label: Text('Add Item'),
+              onPressed: () => showDialog(
+                context: context,
+                builder: (_) => _ItemDialog(
+                  onSubmit: (name, price, imageFile, downloadUrl, storagePath) async {
+                    await _categories.doc(categoryId).update({
+                      'items.${DateTime.now().millisecondsSinceEpoch}': {
+                        'name': name,
+                        'price': price,
+                        'url': downloadUrl,
+                        'path': storagePath,
+                      }
+                    });
+                  },
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
-class ItemPopup extends StatelessWidget {
-  ItemPopup({super.key, required this.addCallback});
-  final Function addCallback;
+/// --- ITEM TILE ---
+class _ItemTile extends StatelessWidget {
+  final String categoryId;
+  final String itemId;
+  final Map<String, dynamic> data;
+  static final _categories = AdminPage._categories;
 
-  Future<XFile?> addImage() async {
-    // 1. pick image
-    ImagePicker imagePicker = ImagePicker();
-    XFile? file = await imagePicker.pickImage(source: ImageSource.gallery);
-    return file;
+  const _ItemTile({
+    required this.categoryId,
+    required this.itemId,
+    required this.data,
+  });
+
+  Future<void> _deleteItem() async {
+    await _categories.doc(categoryId).update({
+      'items.$itemId': FieldValue.delete(),
+    });
+    // Optionally delete from storage:
+    if (data['path'] != null && (data['path'] as String).isNotEmpty) {
+      await FirebaseStorage.instance.ref(data['path']).delete();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    XFile? file;
-    String name = "";
-    int price = 0;
+    final name  = data['name']  as String? ?? '';
+    final price = data['price'] as int?    ?? 0;
+    final url   = data['url']   as String? ?? '';
+    final path  = data['path']  as String? ?? '';
+
+    return ListTile(
+      leading: url.isNotEmpty
+          ? Image.network(url, width: 56, height: 56, fit: BoxFit.cover)
+          : SizedBox(width: 56, height: 56),
+      title: Text(name),
+      subtitle: Text('¥$price'),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: Icon(Icons.edit, color: Colors.orange),
+            onPressed: () => showDialog(
+              context: context,
+              builder: (_) => _ItemDialog(
+                initialName: name,
+                initialPrice: price,
+                initialUrl: url,
+                initialPath: path,
+                onSubmit: (newName, newPrice, newFile, newUrl, newPath) async {
+                  // if a newFile was chosen, delete old and upload new
+                  String finalUrl = newUrl;
+                  String finalPath = newPath;
+                  if (newFile != null) {
+                    // delete old
+                    if (path.isNotEmpty) await FirebaseStorage.instance.ref(path).delete();
+                    // upload new
+                    final unique = DateTime.now().millisecondsSinceEpoch.toString();
+                    final ref = FirebaseStorage.instance.ref('images/$unique');
+                    await ref.putFile(File(newFile.path));
+                    finalUrl = await ref.getDownloadURL();
+                    finalPath = 'images/$unique';
+                  }
+                  await _categories.doc(categoryId).update({
+                    'items.$itemId': {
+                      'name': newName,
+                      'price': newPrice,
+                      'url': finalUrl,
+                      'path': finalPath,
+                    }
+                  });
+                },
+              ),
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.delete, color: Colors.red),
+            onPressed: _deleteItem,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// --- CATEGORY ADD/EDIT DIALOG ---
+class _CategoryDialog extends StatefulWidget {
+  final String? initialName;
+  final Future<void> Function(String name) onSubmit;
+  const _CategoryDialog({this.initialName, required this.onSubmit});
+
+  @override
+  __CategoryDialogState createState() => __CategoryDialogState();
+}
+
+class __CategoryDialogState extends State<_CategoryDialog> {
+  late TextEditingController _controller;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialName ?? '');
+  }
+
+  void _submit() {
+    final txt = _controller.text.trim();
+    if (txt.isEmpty) {
+      setState(() => _error = 'Please enter a name.');
+      return;
+    }
+    widget.onSubmit(txt).then((_) => Navigator.pop(context));
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: Colors.white,
-      title: Text("Name and Price"),
+      title: Text(widget.initialName == null ? 'New Category' : 'Edit Category'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (_error != null) Text(_error!, style: TextStyle(color: Colors.red)),
           TextField(
-              decoration: InputDecoration(hintText: "Enter item name"),
-              autofocus: true,
-              onChanged: (value) => name = value),
-          TextField(
-              decoration: InputDecoration(hintText: "Enter item price"),
-              autofocus: true,
-              onChanged: (value) => price = int.parse(value)),
-          SizedBox(height: 25),
-          FloatingActionButton.extended(
-              onPressed: () async {
-                file = await addImage();
-              },
-              label: Row(
-                children: [Icon(Icons.image), Icon(Icons.add)],
-              ))
+            controller: _controller,
+            decoration: InputDecoration(labelText: 'Name'),
+            autofocus: true,
+          ),
         ],
       ),
       actions: [
-        FloatingActionButton(
-            backgroundColor: const Color.fromARGB(255, 65, 174, 69),
-            onPressed: () {
-              if (name != "" && price != 0) {
-                addCallback(name, price, file);
-                Navigator.pop(context);
-              }
-            },
-            child: Text("Submit", style: TextStyle(color: Colors.white)))
+        TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel')),
+        ElevatedButton(onPressed: _submit, child: Text('Submit')),
       ],
     );
   }
 }
 
-class EditItemPopup extends StatelessWidget {
-  EditItemPopup({super.key, required this.addCallback, required this.deleteCallback, required this.name, required this.price, required this.file});
-  final Function addCallback;
-  final Function deleteCallback;
-  final name;
-  final price;
-  final file;
+/// --- ITEM ADD/EDIT DIALOG ---
+class _ItemDialog extends StatefulWidget {
+  final String? initialName;
+  final int?    initialPrice;
+  final String? initialUrl;
+  final String? initialPath;
+  final Future<void> Function(
+    String name,
+    int price,
+    XFile? imageFile,
+    String url,
+    String path,
+  ) onSubmit;
 
-  Future<XFile?> addImage() async {
-    // 1. pick image
-    ImagePicker imagePicker = ImagePicker();
-    XFile? file = await imagePicker.pickImage(source: ImageSource.gallery);
-    return file;
+  const _ItemDialog({
+    this.initialName,
+    this.initialPrice,
+    this.initialUrl,
+    this.initialPath,
+    required this.onSubmit,
+  });
+
+  @override
+  __ItemDialogState createState() => __ItemDialogState();
+}
+
+class __ItemDialogState extends State<_ItemDialog> {
+  final _picker = ImagePicker();
+  late TextEditingController _nameCtrl;
+  late TextEditingController _priceCtrl;
+  XFile? _picked;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameCtrl  = TextEditingController(text: widget.initialName ?? '');
+    _priceCtrl = TextEditingController(text: widget.initialPrice?.toString() ?? '');
+  }
+
+  Future<void> _pickImage() async {
+    final file = await _picker.pickImage(source: ImageSource.gallery);
+    setState(() => _picked = file);
+  }
+
+  void _submit() {
+    final name = _nameCtrl.text.trim();
+    final price = int.tryParse(_priceCtrl.text.trim());
+    if (name.isEmpty || price == null || (widget.initialUrl == null && _picked == null)) {
+      setState(() => _error = 'Enter name, valid price, and select an image.');
+      return;
+    }
+    widget.onSubmit(
+      name,
+      price,
+      _picked,
+      widget.initialUrl ?? '',
+      widget.initialPath ?? '',
+    ).then((_) => Navigator.pop(context));
   }
 
   @override
   Widget build(BuildContext context) {
-    XFile? newFile = file;
-    String newName = name;
-    int newPrice = price;
+    final hasPreview = _picked != null || (widget.initialUrl?.isNotEmpty ?? false);
+    final previewUrl = _picked?.path ?? widget.initialUrl;
+
     return AlertDialog(
-      backgroundColor: Colors.white,
-      title: Text("Name and Price"),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-              decoration: InputDecoration(hintText: "Enter item name"),
-              autofocus: true,
-              onChanged: (value) => newName = value),
-          TextField(
-              decoration: InputDecoration(hintText: "Enter item price"),
-              autofocus: true,
-              onChanged: (value) => newPrice = int.parse(value)),
-          SizedBox(height: 25),
-          FloatingActionButton.extended(
-              onPressed: () async {
-                newFile = await addImage();
-              },
-              label: Row(
-                children: [Icon(Icons.image), Icon(Icons.add)],
-              ))
-        ],
+      title: Text(widget.initialName == null ? 'Add Item' : 'Edit Item'),
+      content: SingleChildScrollView(
+        child: Column(
+          children: [
+            if (_error != null) Text(_error!, style: TextStyle(color: Colors.red)),
+            TextField(
+              controller: _nameCtrl,
+              decoration: InputDecoration(labelText: 'Name'),
+            ),
+            TextField(
+              controller: _priceCtrl,
+              decoration: InputDecoration(labelText: 'Price'),
+              keyboardType: TextInputType.number,
+            ),
+            SizedBox(height: 12),
+            if (hasPreview)
+              Image(
+                image: _picked != null
+                    ? FileImage(File(previewUrl!))
+                    : NetworkImage(previewUrl!) as ImageProvider,
+                width: 80,
+                height: 80,
+                fit: BoxFit.cover,
+              ),
+            TextButton.icon(
+              icon: Icon(Icons.image),
+              label: Text(hasPreview ? 'Change Image' : 'Pick Image'),
+              onPressed: _pickImage,
+            ),
+          ],
+        ),
       ),
       actions: [
-        FloatingActionButton(
-            backgroundColor: const Color.fromARGB(255, 65, 174, 69),
-            onPressed: () {
-              if (name != "" && price != 0) {
-                addCallback(name, price, file);
-                //deleteCallback(o, property)
-                Navigator.pop(context);
-              }
-            },
-            child: Text("Submit", style: TextStyle(color: Colors.white)))
+        TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel')),
+        ElevatedButton(onPressed: _submit, child: Text('Submit')),
       ],
     );
   }
