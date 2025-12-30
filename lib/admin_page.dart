@@ -131,7 +131,18 @@ class _CategoryTile extends StatelessWidget {
               onPressed: () => showDialog(
                 context: context,
                 builder: (_) => _ItemDialog(
-                  onSubmit: (name, price, imageFile, downloadUrl, storagePath) async {
+                  onSubmit: (name, price, imageFile, _, __) async {
+                    String downloadUrl = '';
+                    String storagePath = '';
+
+                    if (imageFile != null) {
+                      final unique = DateTime.now().millisecondsSinceEpoch.toString();
+                      final ref = FirebaseStorage.instance.ref('images/$unique');
+                      await ref.putFile(File(imageFile.path));
+                      downloadUrl = await ref.getDownloadURL();
+                      storagePath = 'images/$unique';
+                    }
+
                     await _categories.doc(categoryId).update({
                       'items.${DateTime.now().millisecondsSinceEpoch}': {
                         'name': name,
@@ -199,6 +210,7 @@ class _ItemTile extends StatelessWidget {
                 initialPrice: price,
                 initialUrl: url,
                 initialPath: path,
+                // CREATING IMAGE
                 onSubmit: (newName, newPrice, newFile, newUrl, newPath) async {
                   // if a newFile was chosen, delete old and upload new
                   String finalUrl = newUrl;
@@ -209,7 +221,7 @@ class _ItemTile extends StatelessWidget {
                     // upload new
                     final unique = DateTime.now().millisecondsSinceEpoch.toString();
                     final ref = FirebaseStorage.instance.ref('images/$unique');
-                    await ref.putFile(File(newFile.path));
+                    await ref.putFile(File(newFile!.path));
                     finalUrl = await ref.getDownloadURL();
                     finalPath = 'images/$unique';
                   }

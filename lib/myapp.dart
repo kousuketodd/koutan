@@ -29,10 +29,8 @@ class HomePage extends StatefulWidget {
 class Inv {
   String name;
   int count;
-  String type;
-  Color color;
   String category;
-  Inv(this.name, this.count, this.type, this.color, this.category);
+  Inv(this.name, this.count, this.category);
 
   @override
   String toString() {
@@ -46,18 +44,25 @@ class _HomePageState extends State<HomePage> {
   // this way, it only rebuilds the log and not the whole page
   ValueNotifier<bool> _notifier = ValueNotifier(false);
   void logItem(String name, int count, String category) {
+    bool exists = false;
+    int i;
+
     if (count == 0) {
       return;
     }
-    String type = "Received";
-    Color color = Colors.green;
-    if (count < 0) {
-      type = "Expended";
-      color = Colors.red;
+    // if item is already logged, update it
+    for (i = 0; i < inventoryLog.length; i++) {
+      if (name == inventoryLog[i].name) {
+        exists = true;
+        inventoryLog[i].count += count;
+        break;
+      }
     }
-    count = count.abs();
-    inventoryLog.add(Inv(name, count, type, color, category));
-    // notify
+    // if item is not logged, add it
+    if (exists == false) {
+      inventoryLog.add(Inv(name, count, category));
+    }
+    // notify/rebuild log
     _notifier.value = !_notifier.value;
   }
 
@@ -71,17 +76,15 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              EditSelect(),
-              Row(
+        child: Column(
+          children: [
+            EditSelect(),
+            Expanded(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center, 
                 children: [
-                Flexible(
-                  child: Tabs(
-                    callback: logItem,
-                  ),
+                Tabs(
+                  callback: logItem,
                 ),
                 // wrap log in this so that only itself is rebuilt
                 Flexible(
@@ -95,8 +98,8 @@ class _HomePageState extends State<HomePage> {
                       }),
                 ),
               ]),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

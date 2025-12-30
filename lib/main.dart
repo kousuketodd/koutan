@@ -22,9 +22,14 @@ made logs writable
 
 finished image upload
 
-TODO:
-make summary page pretty
-fix state setting when logging new items and deleting them
+app works with new db layout
 
+Negative logs are properly handled 
+
+Clear log list when submitting
+
+Log writes unique logs for the same item. Either update the item in the log category, or have summary page merge them (FIXED)
+TODO:
+    Fix master total being stuck at 0
  */
 

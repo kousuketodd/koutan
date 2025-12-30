@@ -1,94 +1,60 @@
+// lib/tabs.dart
+
 import 'package:flutter/material.dart';
-import 'inventory_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'inventory_storage.dart';
 
-class Tabs extends StatefulWidget {
+class Tabs extends StatelessWidget {
   final Function callback;
-  Tabs({Key? key, required this.callback}) : super(key: key);
-
-  @override
-  State<Tabs> createState() => _TabsState();
-}
-
-class _TabsState extends State<Tabs> with TickerProviderStateMixin {
-  List<InventoryTab> tabList = [];
-  List<InventoryStorage> pageList = [];
-  int tabLength = 0;
+  const Tabs({super.key, required this.callback});
 
   @override
   Widget build(BuildContext context) {
     final categories = FirebaseFirestore.instance.collection('Categories');
-    // populate tabs and their corresponding pages
-    categories.get().then((querySnapshot) {});
-    return FutureBuilder<QuerySnapshot>(
-        // future builder lets the code wait until the data is retrieved
-        future: FirebaseFirestore.instance.collection("Categories").get(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
-          }
-          final querySnapshot = snapshot.data!;
-          tabList.clear();
-          pageList.clear();
-          for (var docSnaphot in querySnapshot.docs) {
-            tabList.add(InventoryTab(name: docSnaphot.id));
-            pageList.add(InventoryStorage(
-              callback: widget.callback,
-              folderName: docSnaphot.id,
-            ));
-          }
-          TabController tabController =
-              TabController(length: tabList.length, vsync: this);
-          return Center(
-            child: Column(
-              children: [
-                // controls the dimensions of the tab bar
-                SizedBox(
-                  width: 900,
-                  child: TabBar(
-                    controller: tabController,
-                    padding: EdgeInsets.only(
-                      left: 20,
-                      right: 20,
-                    ),
-                    labelColor: Colors.white,
-                    unselectedLabelColor: Colors.grey,
-                    indicatorSize: TabBarIndicatorSize.label,
-                    indicatorColor: Colors.transparent,
-                    indicator: BoxDecoration(
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(10),
-                        topRight: Radius.circular(10),
-                      ),
-                      color: Colors.grey,
-                    ),
-                    tabs: tabList,
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: categories.snapshots(),
+      builder: (ctx, snap) {
+        if (snap.hasError) return Center(child: Text('Error: ${snap.error}'));
+        if (!snap.hasData)  return Center(child: CircularProgressIndicator());
+
+        final docs = snap.data!.docs;
+        if (docs.isEmpty) return Center(child: Text('No categories found.'));
+
+        // Build tabs and pages
+        final tabs  = docs.map((d) => Tab(text: (d.data()! as Map)['name'] as String? ?? d.id)).toList();
+        final pages = docs.map((d) => InventoryStorage(
+          folderId: d.id,
+          callback: callback,
+        )).toList();
+
+        return DefaultTabController(
+          length: tabs.length,
+          child: Column(
+            children: [
+              SizedBox(
+                width: 900,
+                child: TabBar(
+                  isScrollable: true,
+                  tabs: tabs,
+                  labelColor: Colors.white,
+                  unselectedLabelColor: Colors.grey,
+                  indicator: BoxDecoration(
+                    color: Colors.grey[700],
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
                   ),
                 ),
-                // controls the dimensions of the pagelist
-                SizedBox(
-                    width: 900,
-                    height: 500,
-                    child: TabBarView(
-                      controller: tabController,
-                      children: pageList,
-                    ))
-              ],
-            ),
-          );
-        });
-  }
-}
-
-class InventoryTab extends StatelessWidget {
-  const InventoryTab({super.key, required this.name});
-  final String name;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tab(child: Align(alignment: Alignment.center, child: Text(name)));
+              ),
+              Expanded(
+                child: SizedBox(
+                  width: 900,
+                  child: TabBarView(children: pages),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }

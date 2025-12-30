@@ -62,9 +62,7 @@ class _SummaryPageState extends State<SummaryPage> {
                       height: 600,
                       child: FutureBuilder(
                         future: FirebaseFirestore.instance
-                            .collection("Logs")
-                            .doc(_selectedDate)
-                            .get(),
+                            .collection("Categories").get(),
                         builder: (context, snapshot) {
                           if (snapshot.connectionState ==
                               ConnectionState.waiting) {
@@ -74,7 +72,7 @@ class _SummaryPageState extends State<SummaryPage> {
                             return Center(
                                 child: Text("Error: ${snapshot.error}"));
                           }
-                          if (snapshot.data!.id == "Date") {
+                          if (_selectedDate == "Date") {
                             return Center(
                                 child: Text(
                                     "Enter a date in the dropdown above!"));
@@ -83,24 +81,22 @@ class _SummaryPageState extends State<SummaryPage> {
                           pendingUpdates = 1;
                           _completer = Completer<void>();
                           List<CategoryCard> categoryCards = [];
-                          final data =
-                              snapshot.data!.data() as Map<String, dynamic>;
-                          data.forEach((key, value) {
-                            if (key != "dummy") {
-                              categoryCards.add(CategoryCard(
-                                categoryName: key,
-                                date: _selectedDate,
-                                updateTotal: (subtotal) {
-                                  pendingUpdates++;
-                                  total += subtotal;
-                                  // once total has been fully incremented, mark completer as complete
-                                  if (pendingUpdates == data.length) {
-                                    _completer.complete();
-                                  }
-                                },
-                              ));
-                            }
-                          });
+                          final data = snapshot.data!.docs;
+                          for (int i = 0; i < data.length; i++) {
+                            categoryCards.add(CategoryCard(
+                              categoryName: data[i]["name"],
+                              categoryId: data[i].id,
+                              date: _selectedDate,
+                              updateTotal: (subtotal) {
+                                pendingUpdates++;
+                                total += subtotal;
+                                // once total has been fully incremented, mark completer as complete
+                                if (pendingUpdates == data.length) {
+                                  _completer.complete();
+                                }
+                              },
+                            ));
+                          }
                           // displays total once it is calculated
                           return FutureBuilder(
                               future: _completer.future,
@@ -133,9 +129,11 @@ class CategoryCard extends StatelessWidget {
   const CategoryCard(
       {super.key,
       required this.categoryName,
+      required this.categoryId,
       required this.date,
       required this.updateTotal});
   final String categoryName;
+  final String categoryId;
   final String date;
   final void Function(num) updateTotal;
 
@@ -145,7 +143,7 @@ class CategoryCard extends StatelessWidget {
         future: Future.wait([
           FirebaseFirestore.instance
               .collection("Categories")
-              .doc(categoryName)
+              .doc(categoryId)
               .get(),
           FirebaseFirestore.instance.collection("Logs").doc(date).get(),
         ]),
@@ -176,20 +174,19 @@ class CategoryCard extends StatelessWidget {
               snapshot.data![0].data() as Map<String, dynamic>;
           final logSnapshot = snapshot.data![1].data() as Map<String, dynamic>;
 
-          logSnapshot[categoryName].forEach(
-            (key, value) {
-              categorySnapshot.forEach((key1, value1) {
-                if (key1 == key) {
-                  names.add(Text(key));
-                  prices.add(Text("${value1["price"].toString()}円"));
-                  quantity.add(Text(value.toString()));
+          categorySnapshot['items'].forEach(
+            (key, itemMap) {
+              for (int i = 0; i < logSnapshot['entries'].length; i++) {
+                Map<String, dynamic> entry = logSnapshot['entries'][i];
+                if (entry['itemName'] == itemMap['name']) {
+                  names.add(Text(itemMap['name']));
+                  prices.add(Text("${itemMap["price"].toString()}円"));
+                  quantity.add(Text(entry['quantity'].toString()));
                   itemTotals
-                      .add(Text("${(value1["price"] * value).toString()}円"));
-                  total += value1["price"] * value;
+                      .add(Text("${(itemMap["price"] * entry['quantity']).toString()}円"));
+                  total += itemMap["price"] * entry['quantity'];
                 }
-              });
-            },
-          );
+        }});
           updateTotal(total);
           double colSpacing = 50;
           return Card(
