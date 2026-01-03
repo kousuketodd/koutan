@@ -13,10 +13,10 @@ class AdminPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Categories')),
+      appBar: AppBar(title: Text('仕入先')),
       floatingActionButton: FloatingActionButton.extended(
         icon: Icon(Icons.add),
-        label: Text('Add Category'),
+        label: Text('仕入先を追加'),
         onPressed: () => showDialog(
           context: context,
           builder: (_) => _CategoryDialog(
@@ -27,11 +27,11 @@ class AdminPage extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot>(
         stream: _categories.snapshots(),
         builder: (ctx, snap) {
-          if (snap.hasError) return Center(child: Text('Error: ${snap.error}'));
+          if (snap.hasError) return Center(child: Text('エラー: ${snap.error}'));
           if (!snap.hasData)  return Center(child: CircularProgressIndicator());
 
           final docs = snap.data!.docs;
-          if (docs.isEmpty) return Center(child: Text('No categories yet.'));
+          if (docs.isEmpty) return Center(child: Text('まだ仕入先がありません。'));
 
           return ListView(
             padding: const EdgeInsets.all(12),
@@ -71,11 +71,11 @@ class _CategoryTile extends StatelessWidget {
     final ok = await showDialog<bool>(
       context: ctx,
       builder: (_) => AlertDialog(
-        title: Text('Delete Category'),
-        content: Text('Are you sure you want to delete “$categoryName”?'),
+        title: Text('削除する'),
+        content: Text('本当に　“$categoryName”　を削除しますか？'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true),  child: Text('Delete', style: TextStyle(color: Colors.red))),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('やめる')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true),  child: Text('削除する', style: TextStyle(color: Colors.red))),
         ],
       ),
     );
@@ -112,7 +112,7 @@ class _CategoryTile extends StatelessWidget {
           if (items.isEmpty)
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Text('No items yet.', style: TextStyle(fontStyle: FontStyle.italic)),
+              child: Text('まだ商品がありません。', style: TextStyle(fontStyle: FontStyle.italic)),
             ),
           ...items.entries.map((e) {
             final itemId   = e.key;
@@ -127,7 +127,7 @@ class _CategoryTile extends StatelessWidget {
             alignment: Alignment.centerRight,
             child: TextButton.icon(
               icon: Icon(Icons.add),
-              label: Text('Add Item'),
+              label: Text('商品を追加'),
               onPressed: () => showDialog(
                 context: context,
                 builder: (_) => _ItemDialog(
@@ -270,7 +270,7 @@ class __CategoryDialogState extends State<_CategoryDialog> {
   void _submit() {
     final txt = _controller.text.trim();
     if (txt.isEmpty) {
-      setState(() => _error = 'Please enter a name.');
+      setState(() => _error = '名前を入力してください。');
       return;
     }
     widget.onSubmit(txt).then((_) => Navigator.pop(context));
@@ -279,21 +279,21 @@ class __CategoryDialogState extends State<_CategoryDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.initialName == null ? 'New Category' : 'Edit Category'),
+      title: Text(widget.initialName == null ? '仕入先を追加する' : '仕入先を編集する'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (_error != null) Text(_error!, style: TextStyle(color: Colors.red)),
           TextField(
             controller: _controller,
-            decoration: InputDecoration(labelText: 'Name'),
+            decoration: InputDecoration(labelText: '仕入先の名前'),
             autofocus: true,
           ),
         ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel')),
-        ElevatedButton(onPressed: _submit, child: Text('Submit')),
+        TextButton(onPressed: () => Navigator.pop(context), child: Text('やめる')),
+        ElevatedButton(onPressed: _submit, child: Text('Enter')),
       ],
     );
   }
@@ -348,7 +348,7 @@ class __ItemDialogState extends State<_ItemDialog> {
     final name = _nameCtrl.text.trim();
     final price = int.tryParse(_priceCtrl.text.trim());
     if (name.isEmpty || price == null || (widget.initialUrl == null && _picked == null)) {
-      setState(() => _error = 'Enter name, valid price, and select an image.');
+      setState(() => _error = '名前、値段、または画像を入力してください。');
       return;
     }
     widget.onSubmit(
@@ -366,18 +366,18 @@ class __ItemDialogState extends State<_ItemDialog> {
     final previewUrl = _picked?.path ?? widget.initialUrl;
 
     return AlertDialog(
-      title: Text(widget.initialName == null ? 'Add Item' : 'Edit Item'),
+      title: Text(widget.initialName == null ? '追加する' : '編集する'),
       content: SingleChildScrollView(
         child: Column(
           children: [
             if (_error != null) Text(_error!, style: TextStyle(color: Colors.red)),
             TextField(
               controller: _nameCtrl,
-              decoration: InputDecoration(labelText: 'Name'),
+              decoration: InputDecoration(labelText: '品名'),
             ),
             TextField(
               controller: _priceCtrl,
-              decoration: InputDecoration(labelText: 'Price'),
+              decoration: InputDecoration(labelText: '金額'),
               keyboardType: TextInputType.number,
             ),
             SizedBox(height: 12),
@@ -392,15 +392,15 @@ class __ItemDialogState extends State<_ItemDialog> {
               ),
             TextButton.icon(
               icon: Icon(Icons.image),
-              label: Text(hasPreview ? 'Change Image' : 'Pick Image'),
+              label: Text(hasPreview ? '画像を変える' : '画像を選ぶ'),
               onPressed: _pickImage,
             ),
           ],
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel')),
-        ElevatedButton(onPressed: _submit, child: Text('Submit')),
+        TextButton(onPressed: () => Navigator.pop(context), child: Text('やめる')),
+        ElevatedButton(onPressed: _submit, child: Text('Enter')),
       ],
     );
   }

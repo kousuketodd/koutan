@@ -47,7 +47,7 @@ class _LogState extends State<Log> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("📒 Ledger",
+          const Text("📒 履歴",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           Expanded(
             child: ListView.builder(
@@ -67,7 +67,7 @@ class _LogState extends State<Log> {
                   widget.inventoryLog.clear();
                 });
               },
-              child: const Text("Submit Logs"),
+              child: const Text("Enter"),
             ),
           )
         ],
@@ -116,7 +116,7 @@ Future<String> _promptForTimeFrame(BuildContext context) async {
   await showDialog(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text('Select or Create Time Frame'),
+      title: const Text('期限を入力してください'),
       content: TextField(
         decoration: const InputDecoration(hintText: 'e.g. 2025-06'),
         onChanged: (value) => inputFrame = value,
@@ -124,14 +124,14 @@ Future<String> _promptForTimeFrame(BuildContext context) async {
       actions: [
         TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel')),
+            child: const Text('やめる')),
         ElevatedButton(
             onPressed: () {
               if (inputFrame?.trim().isNotEmpty ?? false) {
                 Navigator.pop(context);
               }
             },
-            child: const Text('Confirm'))
+            child: const Text('EnteEnter'))
       ],
     ),
   );

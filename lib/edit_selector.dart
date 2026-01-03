@@ -5,9 +5,9 @@ import 'summary_page.dart';
 class EditSelect extends StatelessWidget {
   EditSelect({super.key});
 
-  final List options = <String>["Inventory", "Edit", "Summary"];
+  final List options = <String>["在庫", "編集", "要約"];
 
-  String option = "Inventory";
+  String option = "在庫";
 
   @override
   Widget build(BuildContext context) {
@@ -37,14 +37,14 @@ class EditSelect extends StatelessWidget {
                   3,
                   (int index) => MenuItemButton(
                       onPressed: () {
-                        if (options[index] == "Inventory") {
+                        if (options[index] == "在庫") {
                           Navigator.pop(context);
                         }
-                        else if (options[index] == "Edit") {
+                        else if (options[index] == "編集") {
                           Navigator.push(context,
                           MaterialPageRoute(builder: (context) => AdminPage()));
                         }
-                        else if (options[index] == "Summary") {
+                        else if (options[index] == "要約") {
                           Navigator.push(context, MaterialPageRoute(builder: (context) => SummaryPage()));
                         }
                       },

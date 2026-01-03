@@ -10,10 +10,56 @@ class SummaryPage extends StatefulWidget {
 }
 
 class _SummaryPageState extends State<SummaryPage> {
-  late String _selectedDate = "Date";
-  late num total = 0;
-  late Completer<void> _completer;
-  int pendingUpdates = 0;
+  late String _selectedDate = "期間";
+  // Helper function to fetch and calculate everything in one go
+  Future<Map<String, dynamic>> _getFullSummary(String date) async {
+    final results = await Future.wait([
+      FirebaseFirestore.instance.collection("Categories").get(),
+      FirebaseFirestore.instance.collection("Logs").doc(date).get(),
+    ]);
+
+    final categoryDocs = (results[0] as QuerySnapshot).docs;
+    final logSnapshot = results[1] as DocumentSnapshot;
+    final logData = logSnapshot.data() as Map<String, dynamic>?;
+
+    num grandTotal = 0;
+    List<Map<String, dynamic>> processedCategories = [];
+
+    if (logData != null && logData['entries'] != null) {
+      for (var doc in categoryDocs) {
+        final catData = doc.data() as Map<String, dynamic>;
+        num categorySubtotal = 0;
+        List<Map<String, dynamic>> matchedItems = [];
+
+        // Logic to match log entries with category items
+        for (var entry in logData['entries']) {
+          catData['items'].forEach((key, item) {
+            if (entry['itemName'] == item['name']) {
+              num sub = item['price'] * entry['quantity'];
+              categorySubtotal += sub;
+              matchedItems.add({
+                'name': item['name'],
+                'price': item['price'],
+                'quantity': entry['quantity'],
+                'subtotal': sub,
+              });
+            }
+          });
+        }
+
+        if (matchedItems.isNotEmpty) {
+          grandTotal += categorySubtotal;
+          processedCategories.add({
+            'name': catData['name'],
+            'items': matchedItems,
+            'total': categorySubtotal,
+          });
+        }
+      }
+    }
+
+    return {'categories': processedCategories, 'grandTotal': grandTotal};
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -25,7 +71,7 @@ class _SummaryPageState extends State<SummaryPage> {
             return Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
+            return Center(child: Text("エラー: ${snapshot.error}"));
           }
           List<QueryDocumentSnapshot> documents = snapshot.data!.docs;
           return Center(
@@ -61,8 +107,7 @@ class _SummaryPageState extends State<SummaryPage> {
                       width: 1000,
                       height: 600,
                       child: FutureBuilder(
-                        future: FirebaseFirestore.instance
-                            .collection("Categories").get(),
+                        future: _getFullSummary(_selectedDate),
                         builder: (context, snapshot) {
                           if (snapshot.connectionState ==
                               ConnectionState.waiting) {
@@ -70,51 +115,29 @@ class _SummaryPageState extends State<SummaryPage> {
                           }
                           if (snapshot.hasError) {
                             return Center(
-                                child: Text("Error: ${snapshot.error}"));
+                                child: Text("エラー: ${snapshot.error}"));
                           }
-                          if (_selectedDate == "Date") {
+                          if (_selectedDate == "期間") {
                             return Center(
                                 child: Text(
-                                    "Enter a date in the dropdown above!"));
+                                    "上のドロップダウンに期間を選んでください。"));
                           }
-                          total = 0;
-                          pendingUpdates = 1;
-                          _completer = Completer<void>();
-                          List<CategoryCard> categoryCards = [];
-                          final data = snapshot.data!.docs;
-                          for (int i = 0; i < data.length; i++) {
-                            categoryCards.add(CategoryCard(
-                              categoryName: data[i]["name"],
-                              categoryId: data[i].id,
-                              date: _selectedDate,
-                              updateTotal: (subtotal) {
-                                pendingUpdates++;
-                                total += subtotal;
-                                // once total has been fully incremented, mark completer as complete
-                                if (pendingUpdates == data.length) {
-                                  _completer.complete();
-                                }
-                              },
-                            ));
-                          }
+                          final categories = snapshot.data!['categories'] as List;
+                          final total = snapshot.data!['grandTotal'];
                           // displays total once it is calculated
-                          return FutureBuilder(
-                              future: _completer.future,
-                              builder: (context, snapshot) {
-                                return Stack(
-                                  alignment: AlignmentDirectional.topCenter,
-                                  children: [
-                                    Wrap(children: categoryCards),
-                                    Positioned(
-                                        bottom: 0,
-                                        right: 0,
-                                        child: Text(
-                                          "Total: $total円",
-                                          style: TextStyle(fontSize: 30),
-                                        ))
-                                  ],
-                                );
-                              });
+                          return Stack(
+                            alignment: AlignmentDirectional.topCenter,
+                            children: [
+                              Wrap(children: categories.map((c) => CategoryCard(data: c)).toList(),),
+                              Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: Text(
+                                    "総計: $total円",
+                                    style: TextStyle(fontSize: 30),
+                                  ))
+                            ],
+                          );
                         },
                       )))
             ]),
@@ -126,100 +149,69 @@ class _SummaryPageState extends State<SummaryPage> {
 }
 
 class CategoryCard extends StatelessWidget {
-  const CategoryCard(
-      {super.key,
-      required this.categoryName,
-      required this.categoryId,
-      required this.date,
-      required this.updateTotal});
-  final String categoryName;
-  final String categoryId;
-  final String date;
-  final void Function(num) updateTotal;
+  final Map<String, dynamic> data;
+  const CategoryCard({super.key, required this.data});
+
+  // Helper to build a consistent row layout
+  Widget _buildRow(String name, String qty, String price, String sub, {bool isHeader = false}) {
+    TextStyle style = TextStyle(
+      fontWeight: isHeader ? FontWeight.bold : FontWeight.normal,
+      fontSize: isHeader ? 14 : 14,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        children: [
+          Expanded(flex: 3, child: Text(name, style: style)),
+          Expanded(flex: 2, child: Text(qty, style: style, textAlign: TextAlign.center)),
+          Expanded(flex: 2, child: Text(price, style: style, textAlign: TextAlign.center)),
+          Expanded(flex: 2, child: Text(sub, style: style, textAlign: TextAlign.right)),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-        future: Future.wait([
-          FirebaseFirestore.instance
-              .collection("Categories")
-              .doc(categoryId)
-              .get(),
-          FirebaseFirestore.instance.collection("Logs").doc(date).get(),
-        ]),
-        builder: ((context, snapshot) {
-          List<Text> names = [
-            Text("Name", style: TextStyle(fontWeight: FontWeight.bold))
-          ];
-          List<Text> prices = [
-            Text("Price", style: TextStyle(fontWeight: FontWeight.bold))
-          ];
-          List<Text> quantity = [
-            Text("Quantity", style: TextStyle(fontWeight: FontWeight.bold))
-          ];
-          List<Text> itemTotals = [
-            Text("Subtotal", style: TextStyle(fontWeight: FontWeight.bold))
-          ];
-          num total = 0;
-
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
-          }
-
-          // get snapshots for each collection
-          final categorySnapshot =
-              snapshot.data![0].data() as Map<String, dynamic>;
-          final logSnapshot = snapshot.data![1].data() as Map<String, dynamic>;
-
-          categorySnapshot['items'].forEach(
-            (key, itemMap) {
-              for (int i = 0; i < logSnapshot['entries'].length; i++) {
-                Map<String, dynamic> entry = logSnapshot['entries'][i];
-                if (entry['itemName'] == itemMap['name']) {
-                  names.add(Text(itemMap['name']));
-                  prices.add(Text("${itemMap["price"].toString()}円"));
-                  quantity.add(Text(entry['quantity'].toString()));
-                  itemTotals
-                      .add(Text("${(itemMap["price"] * entry['quantity']).toString()}円"));
-                  total += itemMap["price"] * entry['quantity'];
-                }
-        }});
-          updateTotal(total);
-          double colSpacing = 50;
-          return Card(
-              color: Color.fromARGB(255, 251, 207, 142),
-              child: Container(
-                  padding: EdgeInsets.all(30),
-                  height: 300,
-                  width: 450,
-                  child: Stack(children: [
-                    Column(
-                      children: [
-                        Text(
-                          categoryName,
-                          style: TextStyle(
-                              fontSize: 30, fontWeight: FontWeight.bold),
-                        ),
-                        SizedBox(height: 25),
-                        Row(children: [
-                          Column(children: names),
-                          SizedBox(width: colSpacing),
-                          Column(children: prices),
-                          SizedBox(width: colSpacing),
-                          Column(children: quantity),
-                          SizedBox(width: colSpacing),
-                          Column(children: itemTotals),
-                        ]),
-                      ],
-                    ),
-                    Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Text("Total Price: $total円"))
-                  ])));
-        }));
+    return Card(
+      color: const Color.fromARGB(255, 251, 207, 142),
+      margin: const EdgeInsets.all(10),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        width: 450, // Slightly wider to accommodate columns
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              data['name'],
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            // The Header Row
+            _buildRow("品名", "数", "値段", "小計", isHeader: true),
+            const Divider(color: Colors.black26),
+            // The Data Rows
+            ... (data['items'] as List).map((item) {
+              return _buildRow(
+                item['name'].toString(),
+                item['quantity'].toString(),
+                "${item['price']}円",
+                "${item['subtotal']}円",
+              );
+            }),
+            const Divider(),
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                "合計: ${data['total']}円",
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            )
+          ],
+        ),
+      ),
+    );
   }
 }
